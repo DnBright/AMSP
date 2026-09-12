@@ -259,12 +259,20 @@ function generateSuratPDF(suratId) {
     var pdfFile = folder.createFile(pdfBlob);
 
     // Set akses siapa saja dengan link bisa lihat
-    pdfFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    try {
+      pdfFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    } catch (eShare) {
+      Logger.log('Set sharing notice: ' + eShare.toString());
+    }
 
     var fileUrl = 'https://drive.google.com/file/d/' + pdfFile.getId() + '/view?usp=sharing';
 
     // Hapus Google Doc sementara
-    docFile.setTrashed(true);
+    try {
+      docFile.setTrashed(true);
+    } catch (eTrash) {
+      Logger.log('Set trashed notice: ' + eTrash.toString());
+    }
 
     Logger.log('✅ PDF berhasil dibuat: ' + fileUrl);
     return { success: true, fileUrl: fileUrl, fileId: pdfFile.getId() };
@@ -386,7 +394,34 @@ function getSuratForScan(suratId) {
 // HELPER: Get or Create Google Drive Folder
 // ============================================================
 function getOrCreateFolder_(folderName) {
-  var folders = DriveApp.getFoldersByName(folderName);
-  if (folders.hasNext()) return folders.next();
-  return DriveApp.createFolder(folderName);
+  try {
+    var folders = DriveApp.getFoldersByName(folderName);
+    if (folders.hasNext()) return folders.next();
+    return DriveApp.createFolder(folderName);
+  } catch (eF) {
+    Logger.log('getOrCreateFolder_ error: ' + eF.toString());
+    return DriveApp.getRootFolder();
+  }
+}
+
+// ============================================================
+// FUNGSI OTORISASI DRIVE & DOCS (Klik Jalankan di Editor Apps Script)
+// ============================================================
+function testOtorisasiDriveDanPDF() {
+  Logger.log('1. Memeriksa izin Google Docs...');
+  var testDoc = DocumentApp.create('AMSP_Test_Doc');
+  var docId = testDoc.getId();
+  Logger.log('Google Docs OK, ID: ' + docId);
+
+  Logger.log('2. Memeriksa izin Google Drive...');
+  var docFile = DriveApp.getFileById(docId);
+  var folder = getOrCreateFolder_(PDF_FOLDER_NAME);
+  Logger.log('Google Drive Folder OK: ' + folder.getName());
+
+  try {
+    docFile.setTrashed(true);
+  } catch (e) {}
+
+  Logger.log('✅ Otorisasi Google Drive dan Dokumen Berhasil!');
+  return 'Otorisasi Berhasil!';
 }
