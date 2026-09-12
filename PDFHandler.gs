@@ -24,90 +24,137 @@ function generateSuratPDF(suratId) {
     var doc = DocumentApp.create(docName);
     var body = doc.getBody();
 
-    // === MARGIN ===
-    body.setMarginTop(40).setMarginBottom(50).setMarginLeft(72).setMarginRight(72);
+    // === MARGIN HALAMAN ===
+    body.setMarginTop(36).setMarginBottom(36).setMarginLeft(54).setMarginRight(54);
 
-    // ── KOP HEADER DENGAN LOGO ──
+    // ── KOP SURAT POJOK KANAN ATAS (PERSIS SEPERTI CONTOH) ──
+    var kopTable = body.appendTable([
+      ['', '', '']
+    ]);
+    kopTable.setBorderWidth(0);
+    var kopRow = kopTable.getRow(0);
+    kopRow.getCell(0).setWidth(260); // Area kosong kiri
+    kopRow.getCell(1).setWidth(46);  // Kolom logo
+    kopRow.getCell(2).setWidth(174); // Kolom teks dinas
+
+    // Logo Kota Ambon
     try {
       var logoUrl = (typeof LOGO_PEMKOT_AMBON !== 'undefined' && LOGO_PEMKOT_AMBON)
         ? LOGO_PEMKOT_AMBON
         : 'https://upload.wikimedia.org/wikipedia/commons/e/e7/Lambang_Kota_Ambon.png';
-      
-      var res = UrlFetchApp.fetch(logoUrl, { muteHttpExceptions: true });
-      if (res.getResponseCode() === 200) {
-        var logoBlob = res.getBlob();
-        var pLogo = body.appendParagraph('');
-        pLogo.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
-        var img = pLogo.appendInlineImage(logoBlob);
-        img.setWidth(55).setHeight(55);
+      var resLogo = UrlFetchApp.fetch(logoUrl, { muteHttpExceptions: true });
+      if (resLogo.getResponseCode() === 200) {
+        var pLogoCell = kopRow.getCell(1).getChild(0).asParagraph();
+        pLogoCell.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+        var logoImg = pLogoCell.appendInlineImage(resLogo.getBlob());
+        logoImg.setWidth(42).setHeight(42);
       }
-    } catch (logoErr) {
-      Logger.log('Logo kop surat error (non-fatal): ' + logoErr.toString());
+    } catch (eLogo) {
+      Logger.log('Logo header error: ' + eLogo.toString());
     }
 
-    var p1 = body.appendParagraph((APP_CONFIG.nama_instansi || 'PEMERINTAH KOTA AMBON').toUpperCase());
-    p1.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
-    p1.editAsText().setFontFamily('Arial').setFontSize(15).setBold(true);
+    // Teks Kop: PEMERINTAH KOTA AMBON / DINAS PUPR KOTA AMBON
+    var pTeksKop = kopRow.getCell(2).getChild(0).asParagraph();
+    pTeksKop.setText('PEMERINTAH\nKOTA AMBON');
+    pTeksKop.editAsText().setFontFamily('Arial').setFontSize(11).setBold(true);
+    pTeksKop.setAlignment(DocumentApp.HorizontalAlignment.LEFT);
 
-    var p2 = body.appendParagraph(APP_CONFIG.nama_lengkap || 'Aplikasi Manajemen Surat Perintah');
-    p2.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
-    p2.editAsText().setFontFamily('Arial').setFontSize(10).setBold(false).setItalic(true);
-
-    body.appendHorizontalRule();
-    body.appendParagraph('');
-
-    // ── JUDUL SURAT ──
-    var labelJenis = { masuk: 'SURAT MASUK', keluar: 'SURAT KELUAR', permohonan: 'SURAT PERMOHONAN' };
-    var pJudul = body.appendParagraph(labelJenis[surat.jenis_surat] || 'SURAT');
-    pJudul.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
-    pJudul.editAsText().setFontFamily('Arial').setFontSize(14).setBold(true);
-
-    var pNomor = body.appendParagraph('Nomor: ' + (surat.nomor_surat || '-'));
-    pNomor.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
-    pNomor.editAsText().setFontFamily('Arial').setFontSize(11).setBold(false);
+    var pDinas = kopRow.getCell(2).appendParagraph('DINAS PUPR KOTA AMBON');
+    pDinas.editAsText().setFontFamily('Arial').setFontSize(10).setBold(true);
+    pDinas.setAlignment(DocumentApp.HorizontalAlignment.LEFT);
 
     body.appendParagraph('');
+    body.appendParagraph('');
 
-    // ── INFO SURAT (Tabel tanpa border) ──
-    var tableData = [
-      ['Perihal',   ': ' + (surat.perihal || '-')],
-      ['Tanggal',   ': ' + formatDateOnly(surat.tanggal)],
-      ['Pengirim',  ': ' + (surat.pengirim || '-')],
-      ['Penerima',  ': ' + (surat.penerima || '-')],
-      ['Tembusan',  ': ' + (surat.tembusan || '-')]
-    ];
+    // ── METADATA SURAT & TANGGAL (KIRI & KANAN) ──
+    var tglSuratIndo = formatTanggalIndo_(surat.tanggal);
+    var teksAmbon = tglSuratIndo ? ('Ambon, ' + tglSuratIndo) : 'Ambon, ................ 2026';
 
-    var tbl = body.appendTable(tableData);
-    tbl.setBorderWidth(0);
-    for (var r = 0; r < tbl.getNumRows(); r++) {
-      tbl.getRow(r).getCell(0).setWidth(110);
-      tbl.getRow(r).editAsText().setFontFamily('Arial').setFontSize(11);
+    var metaTable = body.appendTable([
+      ['Nomor',    ': ' + (surat.nomor_surat || '............................................'), teksAmbon],
+      ['Lampiran', ': ' + (surat.lampiran || '............................................'), ''],
+      ['Sifat',    ': ' + (surat.sifat || 'Biasa/Rahasia/Penting/Segera'), ''],
+      ['Hal',      ': ' + (surat.perihal || '............................................'), '']
+    ]);
+    metaTable.setBorderWidth(0);
+    for (var m = 0; m < metaTable.getNumRows(); m++) {
+      var rMeta = metaTable.getRow(m);
+      rMeta.getCell(0).setWidth(70);
+      rMeta.getCell(1).setWidth(240);
+      rMeta.getCell(2).setWidth(170);
+      rMeta.getCell(0).editAsText().setFontFamily('Arial').setFontSize(10);
+      rMeta.getCell(1).editAsText().setFontFamily('Arial').setFontSize(10);
+      rMeta.getCell(2).editAsText().setFontFamily('Arial').setFontSize(10);
+      if (m === 0) {
+        rMeta.getCell(2).getChild(0).asParagraph().setAlignment(DocumentApp.HorizontalAlignment.RIGHT);
+      }
     }
 
     body.appendParagraph('');
+
+    // ── TUJUAN SURAT ──
+    body.appendParagraph('Kepada');
+    body.appendParagraph('');
+    var pYth = body.appendParagraph('Yth. ' + (surat.penerima || '............................................'));
+    pYth.editAsText().setFontFamily('Arial').setFontSize(10);
+    var pDi = body.appendParagraph('Di -');
+    pDi.editAsText().setFontFamily('Arial').setFontSize(10);
+    var pKota = body.appendParagraph('     Ambon');
+    pKota.editAsText().setFontFamily('Arial').setFontSize(10);
+
     body.appendParagraph('');
 
-    // ── ISI SURAT ──
-    var isiText = surat.isi_surat ||
-      'Dengan hormat,\n\nBerkenaan dengan perihal di atas, bersama surat ini kami sampaikan untuk ditindaklanjuti sebagaimana mestinya.\n\nDemikian surat ini kami sampaikan. Atas perhatian dan kerja sama yang baik, kami ucapkan terima kasih.';
-
-    var pIsi = body.appendParagraph(isiText);
-    pIsi.editAsText().setFontFamily('Arial').setFontSize(11);
+    // ── PARAGRAF PEMBUKA ──
+    var pBuka = body.appendParagraph(
+      'Dalam rangka mendukung kelancaran pelaksanaan tugas dan menjaga tertib administrasi pada Dinas Pekerjaan Umum dan Penataan Ruang Kota Ambon, bersama ini kami menyampaikan informasi sebagai berikut:'
+    );
+    pBuka.editAsText().setFontFamily('Arial').setFontSize(10);
+    pBuka.setAlignment(DocumentApp.HorizontalAlignment.JUSTIFY);
 
     body.appendParagraph('');
+
+    // ── TABEL RINCIAN KEGIATAN ──
+    var hariTgl = formatHariTanggalIndo_(surat.tanggal) || '............................................';
+    var waktuVal = surat.waktu || '............................................';
+    var tempatVal = surat.tempat || '............................................';
+    var kegiatanVal = surat.perihal || surat.isi_surat || '............................................';
+
+    var infoTable = body.appendTable([
+      ['Hari / Tanggal',     ': ' + hariTgl],
+      ['Waktu',              ': ' + waktuVal],
+      ['Tempat / Wilayah',   ': ' + tempatVal],
+      ['Kegiatan/Pekerjaan', ': ' + kegiatanVal]
+    ]);
+    infoTable.setBorderWidth(0);
+    for (var k = 0; k < infoTable.getNumRows(); k++) {
+      var rInfo = infoTable.getRow(k);
+      rInfo.getCell(0).setWidth(150);
+      rInfo.getCell(1).setWidth(330);
+      rInfo.getCell(0).editAsText().setFontFamily('Arial').setFontSize(10);
+      rInfo.getCell(1).editAsText().setFontFamily('Arial').setFontSize(10);
+    }
+
     body.appendParagraph('');
 
-    // ── TANDA TANGAN BERBASIS BARCODE / QR CODE ──
+    // ── PARAGRAF PENUTUP ──
+    var pTutup1 = body.appendParagraph(
+      'Untuk menunjang pelaksanaan kegiatan tersebut, seluruh pihak terkait diharapkan dapat melakukan koordinasi dan menyiapkan kebutuhan administrasi maupun teknis sesuai dengan ketentuan yang berlaku.'
+    );
+    pTutup1.editAsText().setFontFamily('Arial').setFontSize(10);
+    pTutup1.setAlignment(DocumentApp.HorizontalAlignment.JUSTIFY);
+
+    body.appendParagraph('');
+    var pTutup2 = body.appendParagraph(
+      'Demikian disampaikan untuk menjadi perhatian dan dapat dilaksanakan sebagaimana mestinya. Atas perhatian dan kerja samanya, kami ucapkan terima kasih.'
+    );
+    pTutup2.editAsText().setFontFamily('Arial').setFontSize(10);
+    pTutup2.setAlignment(DocumentApp.HorizontalAlignment.JUSTIFY);
+
+    body.appendParagraph('');
+
+    // ── BLOK TANDA TANGAN & TEMBUSAN (2 Kolom Bawah) ──
+    var qrBlob = null;
     if (surat.nama_pimpinan_ttd) {
-      body.appendParagraph('');
-      var pTtdTitle = body.appendParagraph('Hormat kami,');
-      pTtdTitle.editAsText().setFontFamily('Arial').setFontSize(11);
-
-      var pJabatan = body.appendParagraph('Pimpinan,');
-      pJabatan.editAsText().setFontFamily('Arial').setFontSize(11).setBold(true);
-
-      // Embed Barcode / QR Code Tanda Tangan Digital
-      var qrBlob = null;
       try {
         var qrApiUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=140x140&margin=2&data='
           + encodeURIComponent(qrUrl);
@@ -115,7 +162,6 @@ function generateSuratPDF(suratId) {
         if (resQr.getResponseCode() === 200) {
           qrBlob = resQr.getBlob().setName('qrcode.png');
         } else {
-          // Fallback ke quickchart.io
           var fallbackQrUrl = 'https://quickchart.io/qr?text=' + encodeURIComponent(qrUrl) + '&size=140';
           var resQr2 = UrlFetchApp.fetch(fallbackQrUrl, { muteHttpExceptions: true });
           if (resQr2.getResponseCode() === 200) {
@@ -125,35 +171,81 @@ function generateSuratPDF(suratId) {
       } catch (qrErr) {
         Logger.log('QR Code fetch error: ' + qrErr.toString());
       }
+    }
 
+    var bottomTable = body.appendTable([
+      ['', '']
+    ]);
+    bottomTable.setBorderWidth(0);
+    var bRow = bottomTable.getRow(0);
+    var leftCell = bRow.getCell(0);  // Tembusan
+    var rightCell = bRow.getCell(1); // Tanda Tangan Pimpinan
+
+    leftCell.setWidth(190);
+    rightCell.setWidth(290);
+
+    // Tanda Tangan Pimpinan (Kanan)
+    var pJabatan1 = rightCell.getChild(0).asParagraph();
+    pJabatan1.setText('KEPALA UPTD PERBENGKELAN DAN\nPERLENGKAPAN KENDARAAN DINAS PUPR KOTA\nAMBON');
+    pJabatan1.editAsText().setFontFamily('Arial').setFontSize(9.5).setBold(true);
+    pJabatan1.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+
+    if (surat.nama_pimpinan_ttd) {
       if (qrBlob) {
-        var pQrImg = body.appendParagraph('');
-        var imgElement = pQrImg.appendInlineImage(qrBlob);
-        imgElement.setWidth(95).setHeight(95);
+        var pQr = rightCell.appendParagraph('');
+        pQr.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+        var imgQr = pQr.appendInlineImage(qrBlob);
+        imgQr.setWidth(85).setHeight(85);
       } else {
-        body.appendParagraph('');
-        body.appendParagraph('');
+        rightCell.appendParagraph('');
+        rightCell.appendParagraph('');
       }
 
-      var pNamaTtd = body.appendParagraph(surat.nama_pimpinan_ttd);
-      pNamaTtd.editAsText().setFontFamily('Arial').setFontSize(11).setBold(true).setUnderline(true);
+      var pNama = rightCell.appendParagraph(surat.nama_pimpinan_ttd);
+      pNama.editAsText().setFontFamily('Arial').setFontSize(10).setBold(true).setUnderline(true);
+      pNama.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
 
-      var pEsign = body.appendParagraph('Ditandatangani secara elektronik (Digital Signature)');
-      pEsign.editAsText().setFontFamily('Arial').setFontSize(8).setItalic(true);
+      var pNip = rightCell.appendParagraph(surat.nip ? ('NIP. ' + surat.nip) : 'NIP. ........................................');
+      pNip.editAsText().setFontFamily('Arial').setFontSize(9.5);
+      pNip.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+    } else {
+      rightCell.appendParagraph('');
+      rightCell.appendParagraph('');
+      rightCell.appendParagraph('');
+      var pDraftNama = rightCell.appendParagraph('..................................................');
+      pDraftNama.editAsText().setFontFamily('Arial').setFontSize(10).setBold(true);
+      pDraftNama.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+      var pDraftNip = rightCell.appendParagraph('NIP. ........................................');
+      pDraftNip.editAsText().setFontFamily('Arial').setFontSize(9.5);
+      pDraftNip.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+    }
 
-      body.appendParagraph('');
-      body.appendHorizontalRule();
+    // Tembusan (Kiri Bawah)
+    // Sejajarkan ke bawah sesuai posisi tanda tangan
+    for (var s = 0; s < 5; s++) {
+      leftCell.appendParagraph('');
+    }
+    var pTembusanTitle = leftCell.appendParagraph('Tembusan:');
+    pTembusanTitle.editAsText().setFontFamily('Arial').setFontSize(9.5).setBold(false);
 
-      // ── FOOTER VERIFIKASI KEABSAHAN QR ──
-      var pQrTitle = body.appendParagraph('🔒 Verifikasi Keaslian Tanda Tangan Digital');
-      pQrTitle.editAsText().setFontFamily('Arial').setFontSize(9).setBold(true);
-
-      var pQrNote = body.appendParagraph(
-        'Surat ini telah disetujui dan ditandatangani secara digital oleh ' + surat.nama_pimpinan_ttd +
-        ' pada ' + formatDate(surat.tanggal_ttd) + '.\n' +
-        'Pindai (Scan) QR Code di atas untuk memverifikasi keaslian surat melalui portal resmi AMSP.'
-      );
-      pQrNote.editAsText().setFontFamily('Arial').setFontSize(8).setItalic(true);
+    if (surat.tembusan) {
+      var listTembusan = String(surat.tembusan).split(/[,;\n]/);
+      var idxT = 1;
+      listTembusan.forEach(function(item) {
+        var tItem = item.trim();
+        if (tItem) {
+          var pItem = leftCell.appendParagraph('  ' + idxT + '. ' + tItem);
+          pItem.editAsText().setFontFamily('Arial').setFontSize(9);
+          idxT++;
+        }
+      });
+    } else {
+      var pT1 = leftCell.appendParagraph('  1. ..........');
+      var pT2 = leftCell.appendParagraph('  2. ..........');
+      var pT3 = leftCell.appendParagraph('  3. ..........');
+      pT1.editAsText().setFontFamily('Arial').setFontSize(9);
+      pT2.editAsText().setFontFamily('Arial').setFontSize(9);
+      pT3.editAsText().setFontFamily('Arial').setFontSize(9);
     }
 
     doc.saveAndClose();
@@ -189,7 +281,31 @@ function generateSuratPDF(suratId) {
 function getQRCodeImageUrl(suratId) {
   var webAppUrl = getWebAppUrl();
   var qrUrl = webAppUrl + '?scan_ttd=' + suratId;
-  return 'https://chart.googleapis.com/chart?chs=200x200&cht=qr&chl=' + encodeURIComponent(qrUrl) + '&choe=UTF-8';
+  return 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=2&data=' + encodeURIComponent(qrUrl);
+}
+
+// ============================================================
+// HELPER: Format Tanggal Indonesia
+// ============================================================
+function formatTanggalIndo_(dateVal) {
+  if (!dateVal) return '';
+  try {
+    var d = (dateVal instanceof Date) ? dateVal : new Date(dateVal);
+    if (isNaN(d.getTime())) return '';
+    var bulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+    return d.getDate() + ' ' + bulan[d.getMonth()] + ' ' + d.getFullYear();
+  } catch(e) { return ''; }
+}
+
+function formatHariTanggalIndo_(dateVal) {
+  if (!dateVal) return '';
+  try {
+    var d = (dateVal instanceof Date) ? dateVal : new Date(dateVal);
+    if (isNaN(d.getTime())) return '';
+    var hari = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    var bulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+    return hari[d.getDay()] + ' / ' + d.getDate() + ' ' + bulan[d.getMonth()] + ' ' + d.getFullYear();
+  } catch(e) { return ''; }
 }
 
 // ============================================================
