@@ -183,11 +183,17 @@ function updateSuratStatus(token, suratId, status) {
         sheet.getRange(rowNum, namaPimpinanIdx + 1).setValue(user.nama);
         sheet.getRange(rowNum, tanggalTtdIdx + 1).setValue(new Date().toISOString());
 
+        // Flush agar data TTD tersimpan sebelum PDF digenerate
+        SpreadsheetApp.flush();
+
         // Generate PDF + QR Code
         try {
           var pdfResult = generateSuratPDF(suratId);
-          if (pdfResult.success) {
+          if (pdfResult.success && pdfResult.fileUrl) {
             sheet.getRange(rowNum, fileUrlIdx + 1).setValue(pdfResult.fileUrl);
+            SpreadsheetApp.flush();
+          } else {
+            Logger.log('generateSuratPDF notice: ' + (pdfResult ? pdfResult.message : 'Unknown result'));
           }
         } catch (pdfErr) {
           Logger.log('PDF error (non-fatal): ' + pdfErr.toString());
@@ -333,11 +339,92 @@ function getArsip(token) {
     return s.id_pembuat === user.userId;
   });
 
+  // Auto-generate PDF jika ada surat yang disetujui tapi file_url-nya belum terisi
+  try {
+    var headers = sheet.getDataRange().getValues()[0];
+    var idColIdx = headers.indexOf('id_surat');
+    var fileUrlColIdx = headers.indexOf('file_url');
+    var updatedAny = false;
+
+    if (idColIdx >= 0 && fileUrlColIdx >= 0) {
+      arsip.forEach(function (s) {
+        if (!s.file_url && s.id_surat) {
+          try {
+            var resPdf = generateSuratPDF(s.id_surat);
+            if (resPdf.success && resPdf.fileUrl) {
+              s.file_url = resPdf.fileUrl;
+              var allRows = sheet.getDataRange().getValues();
+              for (var r = 1; r < allRows.length; r++) {
+                if (allRows[r][idColIdx] === s.id_surat) {
+                  sheet.getRange(r + 1, fileUrlColIdx + 1).setValue(resPdf.fileUrl);
+                  updatedAny = true;
+                  break;
+                }
+              }
+            }
+          } catch (ePdf) {
+            Logger.log('Auto PDF on getArsip failed for ' + s.id_surat + ': ' + ePdf.toString());
+          }
+        }
+      });
+      if (updatedAny) {
+        SpreadsheetApp.flush();
+      }
+    }
+  } catch (errAuto) {
+    Logger.log('Auto PDF loop error: ' + errAuto.toString());
+  }
+
   arsip.sort(function (a, b) {
     return new Date(b.tanggal_ttd || b.tanggal_dibuat || 0) - new Date(a.tanggal_ttd || a.tanggal_dibuat || 0);
   });
 
   return { success: true, data: arsip };
+}
+
+// ============================================================
+// REGENERATE PDF SURAT (Manual dari UI jika perlu)
+// ============================================================
+function regenerateSuratPDF(token, suratId) {
+  var session = validateSession(token);
+  if (!session.valid) return { success: false, message: session.message };
+
+  if (!suratId) return { success: false, message: 'ID Surat tidak valid.' };
+
+  var sheet = getSheet(SHEET_NAMES.SURAT);
+  var sheetData = sheet.getDataRange().getValues();
+  var headers = sheetData[0];
+  var idIdx = headers.indexOf('id_surat');
+  var fileUrlIdx = headers.indexOf('file_url');
+
+  var rowNum = -1;
+  for (var i = 1; i < sheetData.length; i++) {
+    if (sheetData[i][idIdx] === suratId) {
+      rowNum = i + 1;
+      break;
+    }
+  }
+
+  if (rowNum === -1) {
+    return { success: false, message: 'Surat tidak ditemukan.' };
+  }
+
+  try {
+    var pdfRes = generateSuratPDF(suratId);
+    if (pdfRes.success && pdfRes.fileUrl) {
+      sheet.getRange(rowNum, fileUrlIdx + 1).setValue(pdfRes.fileUrl);
+      SpreadsheetApp.flush();
+      return {
+        success: true,
+        message: 'PDF berhasil dibuat!',
+        fileUrl: pdfRes.fileUrl
+      };
+    } else {
+      return { success: false, message: pdfRes.message || 'Gagal membuat PDF.' };
+    }
+  } catch (err) {
+    return { success: false, message: 'Error membuat PDF: ' + err.toString() };
+  }
 }
 
 // ============================================================

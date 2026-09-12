@@ -612,8 +612,37 @@ function renderArsip(data) {
       '<td>' + badgeJenis(s.jenis_surat) + '</td>' +
       '<td>' + escHtml(s.nama_pimpinan_ttd||'-') + '</td>' +
       '<td>' + fmtDate(s.tanggal_ttd) + '</td>' +
-      '<td>' + (s.file_url ? '<a href="' + s.file_url + '" target="_blank" class="btn btn-primary btn-xs">📄 Download PDF</a>' : '<span class="text-muted text-sm">-</span>') + '</td></tr>';
+      '<td>' + (s.file_url ? '<a href="' + s.file_url + '" target="_blank" class="btn btn-primary btn-xs">📄 Download PDF</a>' : '<button class="btn btn-warning btn-xs" onclick="generatePdfManual(\'' + s.id_surat + '\', this)">⚡ Buat PDF</button>') + '</td></tr>';
   }).join('');
+}
+
+function generatePdfManual(suratId, btn) {
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = '⏳ Membuat...';
+  }
+  showLoading('Sedang membuat PDF surat...');
+  callServer('regenerateSuratPDF', token, suratId).then(function(res) {
+    hideLoading();
+    if (res.success) {
+      showToast('PDF berhasil dibuat!', 'success');
+      loadArsip();
+      if (res.fileUrl) window.open(res.fileUrl, '_blank');
+    } else {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = '⚡ Coba Lagi';
+      }
+      showToast(res.message || 'Gagal membuat PDF', 'error');
+    }
+  }).catch(function(err) {
+    hideLoading();
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = '⚡ Coba Lagi';
+    }
+    showToast('Terjadi kesalahan: ' + (err.message || err), 'error');
+  });
 }
 
 function filterArsip(q) {
