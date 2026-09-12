@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard Admin — AMSP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <?!= include('CSS'); ?>
+</head>
+<body>
+<div class="app-layout">
+
+  <!-- ═══════ SIDEBAR ═══════ -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <img src="<?!= getAppLogo() ?>" onerror="this.onerror=null;this.src='https://upload.wikimedia.org/wikipedia/commons/e/e7/Lambang_Kota_Ambon.png';" class="brand-logo-img" alt="Logo Kota Ambon"/>
+      <div>
+        <div class="brand-name">AMSP</div>
+        <div class="brand-sub">Kota Ambon</div>
+      </div>
+    </div>
+    <div class="sidebar-user">
+      <div class="user-avatar" id="sidebarAvatar">A</div>
+      <div class="user-name" id="sidebarUserName">Administrator</div>
+      <div class="user-role" id="sidebarUserRole">Admin</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-label">Menu Utama</div>
+      <div class="nav-item active" data-section="users" onclick="switchSection('users')">
+        <span class="nav-icon">👥</span><span>Kelola Pengguna</span>
+      </div>
+      <div class="nav-item" data-section="pending" onclick="switchSection('pending')">
+        <span class="nav-icon">⏳</span><span>Persetujuan Akun</span>
+        <span class="nav-badge hidden" id="pendingBadge">0</span>
+      </div>
+      <div class="nav-label">Data Surat</div>
+      <div class="nav-item" data-section="surat" onclick="switchSection('surat')">
+        <span class="nav-icon">📋</span><span>Semua Surat</span>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="btn-logout" onclick="logout()">🚪 <span>Keluar</span></button>
+    </div>
+  </aside>
+
+  <!-- ═══════ MAIN CONTENT ═══════ -->
+  <div class="main-content">
+    <!-- Top Nav -->
+    <header class="topnav">
+      <div class="topnav-title" id="topnavTitle">Kelola Pengguna</div>
+      <div class="topnav-right">
+        <button class="notif-btn" onclick="toggleNotifPanel()" title="Notifikasi">
+          🔔<span class="notif-badge hidden" id="notifBadge"></span>
+        </button>
+      </div>
+    </header>
+
+    <div class="page-content">
+
+      <!-- ── SECTION: KELOLA PENGGUNA ── -->
+      <div id="section-users" class="section">
+        <div class="page-header">
+          <h1>👥 Kelola Pengguna</h1>
+          <p>Buat, edit, dan hapus akun pengguna sistem.</p>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Daftar Semua Pengguna</span>
+            <div class="d-flex gap-8 flex-wrap">
+              <div class="search-wrap">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="userSearch" placeholder="Cari pengguna..." oninput="filterUserTable(this.value)"/>
+              </div>
+              <button class="btn btn-primary" onclick="openModal('modalCreateUser')">
+                ➕ Tambah User
+              </button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table id="userTable">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Nama</th>
+                  <th>Username</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                  <th>Tgl Daftar</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="userTableBody">
+                <tr><td colspan="7" style="text-align:center;padding:40px"><div class="spinner"></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SECTION: PERSETUJUAN AKUN ── -->
+      <div id="section-pending" class="section hidden">
+        <div class="page-header">
+          <h1>⏳ Persetujuan Akun</h1>
+          <p>Setujui atau tolak pendaftaran akun baru.</p>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Akun Menunggu Persetujuan</span>
+            <button class="btn btn-ghost btn-sm" onclick="loadPendingUsers()">🔄 Refresh</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>#</th><th>Nama</th><th>Username</th><th>Role</th><th>Tgl Daftar</th><th>Aksi</th></tr>
+              </thead>
+              <tbody id="pendingTableBody">
+                <tr><td colspan="6" style="text-align:center;padding:40px"><div class="spinner"></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SECTION: SEMUA SURAT ── -->
+      <div id="section-surat" class="section hidden">
+        <div class="page-header">
+          <h1>📋 Semua Surat</h1>
+          <p>Pantau seluruh surat dalam sistem.</p>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Daftar Surat</span>
+            <div class="search-wrap">
+              <span class="search-icon">🔍</span>
+              <input type="text" placeholder="Cari surat..." oninput="searchSuratAdmin(this.value)"/>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>#</th><th>No. Surat</th><th>Perihal</th><th>Jenis</th><th>Pembuat</th><th>Tanggal</th><th>Status</th><th>Aksi</th></tr>
+              </thead>
+              <tbody id="suratAdminBody">
+                <tr><td colspan="8" style="text-align:center;padding:40px"><div class="spinner"></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /page-content -->
+  </div><!-- /main-content -->
+</div><!-- /app-layout -->
+
+<!-- ═══════ NOTIF PANEL ═══════ -->
+<div class="notif-panel" id="notifPanel">
+  <div class="notif-panel-header">
+    <span class="notif-panel-title">🔔 Notifikasi</span>
+    <button class="btn btn-ghost btn-xs" onclick="markAllNotifRead()">Baca Semua</button>
+  </div>
+  <div id="notifList"></div>
+</div>
+
+<!-- ═══════ MODAL: CREATE USER ═══════ -->
+<div class="modal-overlay" id="modalCreateUser">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">➕ Tambah Pengguna Baru</span>
+      <button class="modal-close" onclick="closeModal('modalCreateUser')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="alert-error" id="createUserError" style="display:none;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px"></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Nama Lengkap *</label>
+          <input type="text" class="form-control" id="createNama" placeholder="Nama lengkap"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Username *</label>
+          <input type="text" class="form-control" id="createUsername" placeholder="username (tanpa spasi)"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Password *</label>
+          <input type="text" class="form-control" id="createPassword" placeholder="Min. 6 karakter"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Role *</label>
+          <select class="form-control" id="createRole">
+            <option value="">-- Pilih Role --</option>
+            <option value="Admin">Admin</option>
+            <option value="Pimpinan">Pimpinan</option>
+            <option value="Pegawai">Pegawai</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email (opsional)</label>
+        <input type="text" class="form-control" id="createEmail" placeholder="email@contoh.com"/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalCreateUser')">Batal</button>
+      <button class="btn btn-primary" id="btnCreateUser" onclick="doCreateUser()">💾 Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ MODAL: EDIT USER ═══════ -->
+<div class="modal-overlay" id="modalEditUser">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">✏️ Edit Pengguna</span>
+      <button class="modal-close" onclick="closeModal('modalEditUser')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editUserId"/>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Nama Lengkap</label>
+          <input type="text" class="form-control" id="editNama"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Username</label>
+          <input type="text" class="form-control" id="editUsername"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Password Baru (kosongkan jika tidak diubah)</label>
+          <input type="text" class="form-control" id="editPassword" placeholder="Password baru..."/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Role</label>
+          <select class="form-control" id="editRole">
+            <option value="Admin">Admin</option>
+            <option value="Pimpinan">Pimpinan</option>
+            <option value="Pegawai">Pegawai</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input type="text" class="form-control" id="editEmail"/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalEditUser')">Batal</button>
+      <button class="btn btn-primary" id="btnEditUser" onclick="doEditUser()">💾 Simpan Perubahan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ LOADING ═══════ -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loadingMsg">Memuat...</div>
+</div>
+
+<?!= include('JavaScript'); ?>
+<script>
+// ─── INIT ─────────────────────────────────────────────────
+var token = sessionStorage.getItem('amsp_token') || '<?= initToken ?>';
+var userData = JSON.parse(sessionStorage.getItem('amsp_user') || 'null');
+var allUsers = [];
+var allSurat = [];
+
+window.addEventListener('load', function() {
+  if (!token) { window.top.location.href = ''; return; }
+  AMSP.token = token;
+  AMSP.user  = userData;
+  google.script.run.withSuccessHandler(function(url) { AMSP.webAppUrl = url; }).getWebAppUrl();
+  initSidebar('users', userData && userData.nama, 'Admin');
+  loadUsers();
+  loadPendingUsers();
+  refreshUnreadCount();
+  loadSuratAdmin();
+});
+
+// ─── SECTION SWITCH ───────────────────────────────────────
+var activeSection = 'users';
+function switchSection(name) {
+  document.querySelectorAll('.section').forEach(function(s) { s.classList.add('hidden'); });
+  document.getElementById('section-' + name).classList.remove('hidden');
+  document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
+  document.querySelector('[data-section="' + name + '"]').classList.add('active');
+  var titles = { users:'Kelola Pengguna', pending:'Persetujuan Akun', surat:'Semua Surat' };
+  document.getElementById('topnavTitle').textContent = titles[name] || name;
+  activeSection = name;
+}
+
+// ─── LOAD USERS ───────────────────────────────────────────
+function loadUsers() {
+  callServer('getUsers', token).then(function(res) {
+    if (!res.success) { showToast(res.message, 'error'); return; }
+    allUsers = res.data;
+    renderUserTable(allUsers);
+  });
+}
+
+function renderUserTable(data) {
+  var tbody = document.getElementById('userTableBody');
+  if (!data.length) {
+    tbody.innerHTML = renderEmptyRow(7, 'Belum ada pengguna');
+    return;
+  }
+  tbody.innerHTML = data.map(function(u, i) {
+    return '<tr>' +
+      '<td>' + (i+1) + '</td>' +
+      '<td><strong>' + escHtml(u.nama) + '</strong></td>' +
+      '<td>' + escHtml(u.username) + '</td>' +
+      '<td>' + badgeRole(u.role) + '</td>' +
+      '<td>' + badgeApproval(u.status_approval) + '</td>' +
+      '<td>' + fmtDate(u.tanggal_daftar) + '</td>' +
+      '<td>' +
+        '<div class="d-flex gap-8">' +
+        '<button class="btn btn-outline btn-xs" onclick="openEditUser(' + JSON.stringify(u).replace(/"/g,'&quot;') + ')">✏️ Edit</button>' +
+        '<button class="btn btn-danger btn-xs" onclick="doDeleteUser(\'' + u.id + '\',\'' + escHtml(u.nama) + '\')">🗑️</button>' +
+        '</div></td>' +
+      '</tr>';
+  }).join('');
+}
+
+function filterUserTable(q) {
+  if (!q) { renderUserTable(allUsers); return; }
+  var filtered = allUsers.filter(function(u) {
+    var kw = q.toLowerCase();
+    return u.nama.toLowerCase().includes(kw) || u.username.toLowerCase().includes(kw) || u.role.toLowerCase().includes(kw);
+  });
+  renderUserTable(filtered);
+}
+
+// ─── LOAD PENDING ─────────────────────────────────────────
+function loadPendingUsers() {
+  callServer('getPendingUsers', token).then(function(res) {
+    if (!res.success) return;
+    var badge = document.getElementById('pendingBadge');
+    if (res.data.length > 0) {
+      badge.textContent = res.data.length;
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+    }
+
+    var tbody = document.getElementById('pendingTableBody');
+    if (!res.data.length) {
+      tbody.innerHTML = renderEmptyRow(6, 'Tidak ada akun yang menunggu persetujuan');
+      return;
+    }
+    tbody.innerHTML = res.data.map(function(u, i) {
+      return '<tr>' +
+        '<td>' + (i+1) + '</td>' +
+        '<td><strong>' + escHtml(u.nama) + '</strong></td>' +
+        '<td>' + escHtml(u.username) + '</td>' +
+        '<td>' + badgeRole(u.role) + '</td>' +
+        '<td>' + fmtDate(u.tanggal_daftar) + '</td>' +
+        '<td><div class="d-flex gap-8">' +
+          '<button class="btn btn-success btn-xs" onclick="doApprove(\'' + u.id + '\')">✅ Setujui</button>' +
+          '<button class="btn btn-danger btn-xs" onclick="doReject(\'' + u.id + '\')">❌ Tolak</button>' +
+        '</div></td></tr>';
+    }).join('');
+  });
+}
+
+// ─── CRUD USERS ───────────────────────────────────────────
+function doCreateUser() {
+  var nama     = document.getElementById('createNama').value.trim();
+  var username = document.getElementById('createUsername').value.trim();
+  var password = document.getElementById('createPassword').value;
+  var role     = document.getElementById('createRole').value;
+  var email    = document.getElementById('createEmail').value.trim();
+  var errEl    = document.getElementById('createUserError');
+  errEl.style.display = 'none';
+
+  if (!nama || !username || !password || !role) {
+    errEl.textContent = 'Semua field wajib diisi.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  var btn = document.getElementById('btnCreateUser');
+  btn.disabled = true; btn.textContent = 'Menyimpan...';
+
+  callServer('createUser', token, {nama:nama,username:username,password:password,role:role,email:email})
+    .then(function(res) {
+      btn.disabled = false; btn.innerHTML = '💾 Simpan';
+      if (!res.success) { errEl.textContent = res.message; errEl.style.display='block'; return; }
+      closeModal('modalCreateUser');
+      showToast(res.message, 'success');
+      loadUsers();
+      // Clear form
+      ['createNama','createUsername','createPassword','createEmail'].forEach(function(id) { document.getElementById(id).value=''; });
+      document.getElementById('createRole').value = '';
+    });
+}
+
+function openEditUser(u) {
+  document.getElementById('editUserId').value   = u.id;
+  document.getElementById('editNama').value     = u.nama;
+  document.getElementById('editUsername').value = u.username;
+  document.getElementById('editPassword').value = '';
+  document.getElementById('editRole').value     = u.role;
+  document.getElementById('editEmail').value    = u.email || '';
+  openModal('modalEditUser');
+}
+
+function doEditUser() {
+  var userId = document.getElementById('editUserId').value;
+  var data = {
+    nama:     document.getElementById('editNama').value.trim(),
+    username: document.getElementById('editUsername').value.trim(),
+    password: document.getElementById('editPassword').value,
+    role:     document.getElementById('editRole').value,
+    email:    document.getElementById('editEmail').value.trim()
+  };
+  var btn = document.getElementById('btnEditUser');
+  btn.disabled = true; btn.textContent = 'Menyimpan...';
+
+  callServer('updateUser', token, userId, data).then(function(res) {
+    btn.disabled = false; btn.innerHTML = '💾 Simpan Perubahan';
+    if (!res.success) { showToast(res.message, 'error'); return; }
+    closeModal('modalEditUser');
+    showToast(res.message, 'success');
+    loadUsers();
+  });
+}
+
+function doDeleteUser(userId, nama) {
+  confirmDialog('Hapus pengguna "' + nama + '"? Tindakan ini tidak dapat dibatalkan.', function() {
+    callServer('deleteUser', token, userId).then(function(res) {
+      showToast(res.message, res.success ? 'success' : 'error');
+      if (res.success) loadUsers();
+    });
+  });
+}
+
+function doApprove(userId) {
+  callServer('approveUser', token, userId).then(function(res) {
+    showToast(res.message, res.success ? 'success' : 'error');
+    if (res.success) { loadPendingUsers(); loadUsers(); }
+  });
+}
+
+function doReject(userId) {
+  confirmDialog('Tolak pendaftaran akun ini?', function() {
+    callServer('rejectUser', token, userId).then(function(res) {
+      showToast(res.message, res.success ? 'success' : 'error');
+      if (res.success) { loadPendingUsers(); loadUsers(); }
+    });
+  });
+}
+
+// ─── SURAT ADMIN ──────────────────────────────────────────
+function loadSuratAdmin() {
+  callServer('getSuratList', token, {}).then(function(res) {
+    if (!res.success) {
+      document.getElementById('suratAdminBody').innerHTML = renderEmptyRow(8, res.message || 'Gagal memuat surat');
+      return;
+    }
+    allSurat = res.data || [];
+    renderSuratAdmin(allSurat);
+  }).catch(function(err) {
+    document.getElementById('suratAdminBody').innerHTML = renderEmptyRow(8, 'Gagal memuat: ' + (err.message || err));
+  });
+}
+
+function renderSuratAdmin(data) {
+  var tbody = document.getElementById('suratAdminBody');
+  if (!data.length) { tbody.innerHTML = renderEmptyRow(8, 'Belum ada surat'); return; }
+  tbody.innerHTML = data.map(function(s, i) {
+    return '<tr>' +
+      '<td>' + (i+1) + '</td>' +
+      '<td><code style="font-size:11px">' + escHtml(s.nomor_surat||'-') + '</code></td>' +
+      '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escHtml(s.perihal) + '</td>' +
+      '<td>' + badgeJenis(s.jenis_surat) + '</td>' +
+      '<td>' + escHtml(s.nama_pembuat||'-') + '</td>' +
+      '<td>' + fmtDate(s.tanggal) + '</td>' +
+      '<td>' + badgeStatus(s.status) + '</td>' +
+      '<td>' +
+        (s.file_url ? '<a href="' + s.file_url + '" target="_blank" class="btn btn-outline btn-xs">📄 PDF</a> ' : '') +
+        '<button class="btn btn-danger btn-xs" onclick="doDeleteSurat(\'' + s.id_surat + '\')">🗑️</button>' +
+      '</td></tr>';
+  }).join('');
+}
+
+function searchSuratAdmin(q) {
+  if (!q) { renderSuratAdmin(allSurat); return; }
+  var kw = q.toLowerCase();
+  renderSuratAdmin(allSurat.filter(function(s) {
+    return (s.perihal||'').toLowerCase().includes(kw) || (s.nomor_surat||'').toLowerCase().includes(kw) || (s.nama_pembuat||'').toLowerCase().includes(kw);
+  }));
+}
+
+function doDeleteSurat(suratId) {
+  confirmDialog('Hapus surat ini secara permanen?', function() {
+    callServer('deleteSurat', token, suratId).then(function(res) {
+      showToast(res.message, res.success ? 'success' : 'error');
+      if (res.success) loadSuratAdmin();
+    });
+  });
+}
+</script>
+</body>
+</html>

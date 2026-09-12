@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard Pimpinan — AMSP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <?!= include('CSS'); ?>
+</head>
+<body>
+<div class="app-layout">
+
+  <!-- ═══════ SIDEBAR ═══════ -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <img src="<?!= getAppLogo() ?>" onerror="this.onerror=null;this.src='https://upload.wikimedia.org/wikipedia/commons/e/e7/Lambang_Kota_Ambon.png';" class="brand-logo-img" alt="Logo Kota Ambon"/>
+      <div>
+        <div class="brand-name">AMSP</div>
+        <div class="brand-sub">Kota Ambon</div>
+      </div>
+    </div>
+    <div class="sidebar-user">
+      <div class="user-avatar" id="sidebarAvatar">P</div>
+      <div class="user-name" id="sidebarUserName">Pimpinan</div>
+      <div class="user-role" id="sidebarUserRole">Pimpinan</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-label">Dashboard</div>
+      <div class="nav-item active" data-section="dashboard" onclick="switchSection('dashboard')">
+        <span class="nav-icon">📊</span><span>Ringkasan</span>
+      </div>
+      <div class="nav-label">Surat</div>
+      <div class="nav-item" data-section="masuk" onclick="switchSection('masuk')">
+        <span class="nav-icon">📨</span><span>Surat Masuk</span>
+      </div>
+      <div class="nav-item" data-section="permohonan" onclick="switchSection('permohonan')">
+        <span class="nav-icon">📋</span><span>Permohonan</span>
+      </div>
+      <div class="nav-item" data-section="arsip" onclick="switchSection('arsip')">
+        <span class="nav-icon">📁</span><span>Arsip</span>
+      </div>
+      <div class="nav-label">Komunikasi</div>
+      <div class="nav-item" data-section="disposisi" onclick="switchSection('disposisi')">
+        <span class="nav-icon">📤</span><span>Disposisi</span>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="btn-logout" onclick="logout()">🚪 <span>Keluar</span></button>
+    </div>
+  </aside>
+
+  <!-- ═══════ MAIN CONTENT ═══════ -->
+  <div class="main-content">
+    <header class="topnav">
+      <div class="topnav-title" id="topnavTitle">Ringkasan</div>
+      <div class="topnav-right">
+        <button class="notif-btn" onclick="toggleNotifPanel()" title="Notifikasi">
+          🔔<span class="notif-badge hidden" id="notifBadge"></span>
+        </button>
+      </div>
+    </header>
+
+    <div class="page-content">
+
+      <!-- ── DASHBOARD RINGKASAN ── -->
+      <div id="section-dashboard" class="section">
+        <div class="page-header">
+          <h1 id="welcomeMsg">Selamat Datang 👋</h1>
+          <p>Ringkasan aktivitas surat hari ini.</p>
+        </div>
+        <div class="stats-grid" id="statsGrid">
+          <div class="stat-card"><div class="stat-icon blue">📨</div><div><div class="stat-label">Surat Masuk</div><div class="stat-value" id="statMasuk">—</div></div></div>
+          <div class="stat-card"><div class="stat-icon orange">📋</div><div><div class="stat-label">Permohonan</div><div class="stat-value" id="statPermohonan">—</div></div></div>
+          <div class="stat-card"><div class="stat-icon green">✅</div><div><div class="stat-label">Sudah Diproses</div><div class="stat-value" id="statDiproses">—</div></div></div>
+          <div class="stat-card"><div class="stat-icon red">⏳</div><div><div class="stat-label">Belum Diproses</div><div class="stat-value" id="statBelum">—</div></div></div>
+          <div class="stat-card"><div class="stat-icon purple">📤</div><div><div class="stat-label">Surat Keluar</div><div class="stat-value" id="statKeluar">—</div></div></div>
+          <div class="stat-card"><div class="stat-icon teal">📁</div><div><div class="stat-label">Total Arsip</div><div class="stat-value" id="statArsip">—</div></div></div>
+        </div>
+
+        <!-- Surat terbaru membutuhkan approval -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">📝 Surat Menunggu Persetujuan</span>
+            <button class="btn btn-ghost btn-sm" onclick="loadDashboardData()">🔄 Refresh</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>#</th><th>No. Surat</th><th>Perihal</th><th>Dari</th><th>Jenis</th><th>Tanggal</th><th>Status</th><th>Aksi</th></tr></thead>
+              <tbody id="pendingApprovalBody">
+                <tr><td colspan="8" style="text-align:center;padding:30px"><div class="spinner"></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SURAT MASUK ── -->
+      <div id="section-masuk" class="section hidden">
+        <div class="page-header"><h1>📨 Surat Masuk</h1><p>Daftar surat yang masuk ke sistem.</p></div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Daftar Surat Masuk</span>
+            <div class="search-wrap">
+              <span class="search-icon">🔍</span>
+              <input type="text" placeholder="Cari surat..." oninput="filterSurat('masuk', this.value)"/>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>#</th><th>No. Surat</th><th>Perihal</th><th>Pengirim</th><th>Tanggal</th><th>Status</th><th>Aksi</th></tr></thead>
+              <tbody id="masukBody"><tr><td colspan="7" style="text-align:center;padding:30px"><div class="spinner"></div></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── PERMOHONAN ── -->
+      <div id="section-permohonan" class="section hidden">
+        <div class="page-header"><h1>📋 Surat Permohonan</h1><p>Permohonan yang diajukan pegawai.</p></div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Daftar Permohonan</span>
+            <div class="search-wrap">
+              <span class="search-icon">🔍</span>
+              <input type="text" placeholder="Cari permohonan..." oninput="filterSurat('permohonan', this.value)"/>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>#</th><th>No. Surat</th><th>Perihal</th><th>Pengaju</th><th>Tanggal</th><th>Status</th><th>Aksi</th></tr></thead>
+              <tbody id="permohonanBody"><tr><td colspan="7" style="text-align:center;padding:30px"><div class="spinner"></div></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── ARSIP ── -->
+      <div id="section-arsip" class="section hidden">
+        <div class="page-header"><h1>📁 Arsip Surat</h1><p>Surat yang telah disetujui dan diarsipkan.</p></div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Arsip</span>
+            <div class="search-wrap">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="arsipSearch" placeholder="Cari arsip..." oninput="filterArsip(this.value)"/>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>#</th><th>No. Surat</th><th>Perihal</th><th>Jenis</th><th>TTD Oleh</th><th>Tgl TTD</th><th>Aksi</th></tr></thead>
+              <tbody id="arsipBody"><tr><td colspan="7" style="text-align:center;padding:30px"><div class="spinner"></div></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── DISPOSISI ── -->
+      <div id="section-disposisi" class="section hidden">
+        <div class="page-header"><h1>📤 Disposisi</h1><p>Kelola disposisi dan balasan dari pegawai.</p></div>
+        <div class="d-flex gap-8 flex-wrap" style="margin-bottom:16px">
+          <div class="filter-tabs">
+            <button class="filter-tab active" onclick="switchDisposisiTab('keluar', this)">📤 Terkirim</button>
+            <button class="filter-tab" onclick="switchDisposisiTab('balasan', this)">💬 Balasan</button>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="openModal('modalDisposisi')">➕ Buat Disposisi</button>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title" id="disposisiTabTitle">Disposisi Terkirim</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>#</th><th>Perihal Surat</th><th>Kepada</th><th>Instruksi</th><th>Tanggal</th><th>Status</th></tr></thead>
+              <tbody id="disposisiBody"><tr><td colspan="6" style="text-align:center;padding:30px"><div class="spinner"></div></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ NOTIF PANEL ═══════ -->
+<div class="notif-panel" id="notifPanel">
+  <div class="notif-panel-header">
+    <span class="notif-panel-title">🔔 Notifikasi</span>
+    <button class="btn btn-ghost btn-xs" onclick="markAllNotifRead()">Baca Semua</button>
+  </div>
+  <div id="notifList"></div>
+</div>
+
+<!-- ═══════ MODAL: DETAIL SURAT ═══════ -->
+<div class="modal-overlay" id="modalDetail">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-title" id="detailModalTitle">Detail Surat</span>
+      <button class="modal-close" onclick="closeModal('modalDetail')">×</button>
+    </div>
+    <div class="modal-body" id="detailModalBody"></div>
+    <div class="modal-footer" id="detailModalFooter"></div>
+  </div>
+</div>
+
+<!-- ═══════ MODAL: DISPOSISI ═══════ -->
+<div class="modal-overlay" id="modalDisposisi">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">📤 Buat Disposisi</span>
+      <button class="modal-close" onclick="closeModal('modalDisposisi')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Pilih Surat *</label>
+        <select class="form-control" id="dispSuratId">
+          <option value="">-- Pilih Surat --</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Kirim ke Pegawai *</label>
+        <select class="form-control" id="dispKe">
+          <option value="">-- Pilih Pegawai --</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Instruksi / Catatan *</label>
+        <textarea class="form-control" id="dispInstruksi" placeholder="Tulis instruksi atau catatan disposisi..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalDisposisi')">Batal</button>
+      <button class="btn btn-primary" id="btnKirimDisposisi" onclick="doKirimDisposisi()">📤 Kirim Disposisi</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ MODAL: SIGN KONFIRMASI ═══════ -->
+<div class="modal-overlay" id="modalSign">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">✍️ Setujui & Tanda Tangan</span>
+      <button class="modal-close" onclick="closeModal('modalSign')">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="text-align:center;padding:16px 0">
+        <div style="font-size:48px;margin-bottom:12px">✍️</div>
+        <p style="font-size:15px;font-weight:600;color:#1e293b" id="signSuratPerihal"></p>
+        <p style="font-size:13px;color:#64748b;margin-top:8px">Dengan menyetujui, tanda tangan digital dan QR Code akan digenerate secara otomatis pada PDF surat.</p>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalSign')">Batal</button>
+      <button class="btn btn-success" id="btnConfirmSign" onclick="doSign()">✅ Ya, Setujui & Tanda Tangan</button>
+    </div>
+  </div>
+</div>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loadingMsg">Memuat...</div>
+</div>
+
+<?!= include('JavaScript'); ?>
+<script>
+var token = sessionStorage.getItem('amsp_token') || '<?= initToken ?>';
+var userData = JSON.parse(sessionStorage.getItem('amsp_user') || 'null');
+var allSuratMasuk = [], allPermohonan = [], allArsip = [], allDisposisiKeluar = [], allBalasan = [];
+var currentDisposisiTab = 'keluar';
+var signSuratId = '';
+var allUsers = [];
+
+window.addEventListener('load', function() {
+  if (!token) { window.top.location.href = ''; return; }
+  AMSP.token = token; AMSP.user = userData;
+  google.script.run.withSuccessHandler(function(url) { AMSP.webAppUrl = url; }).getWebAppUrl();
+  if (userData) document.getElementById('welcomeMsg').textContent = 'Selamat Datang, ' + userData.nama + ' 👋';
+  initSidebar('dashboard', userData && userData.nama, 'Pimpinan');
+  loadDashboardData();
+  loadSuratMasuk();
+  loadPermohonan();
+  loadArsip();
+  loadDisposisiKeluar();
+  loadUsersForDropdown();
+  refreshUnreadCount();
+});
+
+// ── SECTION SWITCH ──────────────────────────────────────
+function switchSection(name) {
+  document.querySelectorAll('.section').forEach(function(s) { s.classList.add('hidden'); });
+  document.getElementById('section-' + name).classList.remove('hidden');
+  document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
+  document.querySelector('[data-section="' + name + '"]').classList.add('active');
+  var titles = {dashboard:'Ringkasan',masuk:'Surat Masuk',permohonan:'Surat Permohonan',arsip:'Arsip Surat',disposisi:'Disposisi'};
+  document.getElementById('topnavTitle').textContent = titles[name] || name;
+}
+
+// ── DASHBOARD DATA ───────────────────────────────────────
+function loadDashboardData() {
+  callServer('getStatistik', token).then(function(res) {
+    if (!res.success) return;
+    var d = res.data;
+    document.getElementById('statMasuk').textContent       = d.masuk;
+    document.getElementById('statPermohonan').textContent  = d.permohonan;
+    document.getElementById('statDiproses').textContent    = d.sudahDiproses;
+    document.getElementById('statBelum').textContent       = d.belumDiproses;
+    document.getElementById('statKeluar').textContent      = d.keluar;
+    document.getElementById('statArsip').textContent       = d.arsip;
+  });
+
+  // Load surat menunggu approval
+  callServer('getSuratList', token, {jenis:'semua', status:'semua'}).then(function(res) {
+    if (!res.success) {
+      document.getElementById('pendingApprovalBody').innerHTML = renderEmptyRow(8, res.message || 'Gagal memuat data');
+      return;
+    }
+    var pending = (res.data || []).filter(function(s) { return s.status === 'verifikasi' || s.status === 'draft'; });
+    renderPendingApproval(pending);
+  }).catch(function(err) {
+    document.getElementById('pendingApprovalBody').innerHTML = renderEmptyRow(8, 'Gagal memuat: ' + (err.message || err));
+  });
+}
+
+function renderPendingApproval(data) {
+  var tbody = document.getElementById('pendingApprovalBody');
+  if (!data || !data.length) {
+    tbody.innerHTML = renderEmptyRow(8, 'Tidak ada surat yang menunggu persetujuan');
+    return;
+  }
+  tbody.innerHTML = data.map(function(s, i) {
+    return '<tr>' +
+      '<td>' + (i+1) + '</td>' +
+      '<td><code style="font-size:11px">' + escHtml(s.nomor_surat||'-') + '</code></td>' +
+      '<td>' + escHtml(s.perihal) + '</td>' +
+      '<td>' + escHtml(s.nama_pembuat||s.pengirim||'-') + '</td>' +
+      '<td>' + badgeJenis(s.jenis_surat) + '</td>' +
+      '<td>' + fmtDate(s.tanggal) + '</td>' +
+      '<td>' + badgeStatus(s.status) + '</td>' +
+      '<td><div class="d-flex gap-8">' +
+        '<button class="btn btn-outline btn-xs" onclick="openDetail(\'' + s.id_surat + '\')">👁️ Detail</button>' +
+        (s.status === 'verifikasi' ? '<button class="btn btn-success btn-xs" onclick="openSign(\'' + s.id_surat + '\',\'' + escHtml(s.perihal) + '\')">✍️ Sign</button>' : '') +
+      '</div></td></tr>';
+  }).join('');
+}
+
+// ── SURAT MASUK ──────────────────────────────────────────
+function loadSuratMasuk() {
+  callServer('getSuratList', token, {jenis:'masuk'}).then(function(res) {
+    if (!res.success) {
+      document.getElementById('masukBody').innerHTML = renderEmptyRow(7, res.message || 'Gagal memuat data');
+      return;
+    }
+    allSuratMasuk = res.data || [];
+    renderSuratTable('masukBody', allSuratMasuk);
+  }).catch(function(err) {
+    document.getElementById('masukBody').innerHTML = renderEmptyRow(7, 'Gagal memuat: ' + (err.message || err));
+  });
+}
+
+// ── PERMOHONAN ───────────────────────────────────────────
+function loadPermohonan() {
+  callServer('getSuratList', token, {jenis:'permohonan'}).then(function(res) {
+    if (!res.success) {
+      document.getElementById('permohonanBody').innerHTML = renderEmptyRow(7, res.message || 'Gagal memuat data');
+      return;
+    }
+    allPermohonan = res.data || [];
+    renderSuratTable('permohonanBody', allPermohonan);
+  }).catch(function(err) {
+    document.getElementById('permohonanBody').innerHTML = renderEmptyRow(7, 'Gagal memuat: ' + (err.message || err));
+  });
+}
+
+function renderSuratTable(bodyId, data) {
+  var tbody = document.getElementById(bodyId);
+  if (!data.length) { tbody.innerHTML = renderEmptyRow(7, 'Belum ada data'); return; }
+  tbody.innerHTML = data.map(function(s, i) {
+    return '<tr>' +
+      '<td>' + (i+1) + '</td>' +
+      '<td><code style="font-size:11px">' + escHtml(s.nomor_surat||'-') + '</code></td>' +
+      '<td>' + escHtml(s.perihal) + '</td>' +
+      '<td>' + escHtml(s.pengirim||s.nama_pembuat||'-') + '</td>' +
+      '<td>' + fmtDate(s.tanggal) + '</td>' +
+      '<td>' + badgeStatus(s.status) + '</td>' +
+      '<td><div class="d-flex gap-8">' +
+        '<button class="btn btn-outline btn-xs" onclick="openDetail(\'' + s.id_surat + '\')">👁️ Detail</button>' +
+        (s.status === 'verifikasi' ? '<button class="btn btn-success btn-xs" onclick="openSign(\'' + s.id_surat + '\',\'' + escHtml(s.perihal) + '\')">✍️ Sign</button>' : '') +
+        '<button class="btn btn-ghost btn-xs" onclick="openDisposisiForSurat(\'' + s.id_surat + '\')">📤 Disposisi</button>' +
+      '</div></td></tr>';
+  }).join('');
+}
+
+function filterSurat(jenis, q) {
+  var src = jenis === 'masuk' ? allSuratMasuk : allPermohonan;
+  var bodyId = jenis === 'masuk' ? 'masukBody' : 'permohonanBody';
+  if (!q) { renderSuratTable(bodyId, src); return; }
+  var kw = q.toLowerCase();
+  renderSuratTable(bodyId, src.filter(function(s) {
+    return (s.perihal||'').toLowerCase().includes(kw) || (s.pengirim||'').toLowerCase().includes(kw);
+  }));
+}
+
+// ── ARSIP ────────────────────────────────────────────────
+function loadArsip() {
+  callServer('getArsip', token).then(function(res) {
+    if (!res.success) return;
+    allArsip = res.data;
+    renderArsip(allArsip);
+  });
+}
+
+function renderArsip(data) {
+  var tbody = document.getElementById('arsipBody');
+  if (!data.length) { tbody.innerHTML = renderEmptyRow(7, 'Arsip kosong'); return; }
+  tbody.innerHTML = data.map(function(s, i) {
+    return '<tr>' +
+      '<td>' + (i+1) + '</td>' +
+      '<td><code style="font-size:11px">' + escHtml(s.nomor_surat||'-') + '</code></td>' +
+      '<td>' + escHtml(s.perihal) + '</td>' +
+      '<td>' + badgeJenis(s.jenis_surat) + '</td>' +
+      '<td>' + escHtml(s.nama_pimpinan_ttd||'-') + '</td>' +
+      '<td>' + fmtDate(s.tanggal_ttd) + '</td>' +
+      '<td><div class="d-flex gap-8">' +
+        (s.file_url ? '<a href="' + s.file_url + '" target="_blank" class="btn btn-primary btn-xs">📄 Download PDF</a>' : '<span class="text-muted text-sm">PDF tidak tersedia</span>') +
+      '</div></td></tr>';
+  }).join('');
+}
+
+function filterArsip(q) {
+  if (!q) { renderArsip(allArsip); return; }
+  var kw = q.toLowerCase();
+  renderArsip(allArsip.filter(function(s) {
+    return (s.perihal||'').toLowerCase().includes(kw) || (s.nomor_surat||'').toLowerCase().includes(kw);
+  }));
+}
+
+// ── DETAIL SURAT ─────────────────────────────────────────
+function openDetail(suratId) {
+  showLoading('Memuat detail surat...');
+  callServer('getSuratById', suratId).then(function(res) {
+    hideLoading();
+    if (!res.success) { showToast(res.message, 'error'); return; }
+    var s = res.data;
+    document.getElementById('detailModalTitle').textContent = 'Detail Surat — ' + (s.nomor_surat||'');
+
+    var rows = [
+      ['Nomor Surat', s.nomor_surat||'-'],
+      ['Jenis', s.jenis_surat],
+      ['Perihal', s.perihal],
+      ['Pengirim', s.pengirim||'-'],
+      ['Penerima', s.penerima||'-'],
+      ['Tembusan', s.tembusan||'-'],
+      ['Tanggal', s.tanggal ? new Date(s.tanggal).toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'}) : '-'],
+      ['Status', s.status],
+      ['Dibuat Oleh', s.nama_pembuat||'-'],
+      ['TTD Oleh', s.nama_pimpinan_ttd||'-'],
+      ['Tanggal TTD', s.tanggal_ttd ? new Date(s.tanggal_ttd).toLocaleString('id-ID') : '-']
+    ];
+
+    document.getElementById('detailModalBody').innerHTML =
+      rows.map(function(r) {
+        return '<div class="surat-detail-row">' +
+          '<div class="surat-detail-label">' + r[0] + '</div>' +
+          '<div class="surat-detail-value">' + escHtml(String(r[1]||'-')) + '</div></div>';
+      }).join('') +
+      (s.isi_surat ? '<div style="margin-top:14px;padding:14px;background:#f8fafc;border-radius:8px;font-size:13px;line-height:1.6;color:#334155"><strong>Isi Surat:</strong><br>' + escHtml(s.isi_surat) + '</div>' : '');
+
+    var footer = '<button class="btn btn-ghost" onclick="closeModal(\'modalDetail\')">Tutup</button>';
+    if (s.file_url) footer += '<a href="' + s.file_url + '" target="_blank" class="btn btn-primary">📄 Download PDF</a>';
+    if (s.status === 'verifikasi') {
+      footer += '<button class="btn btn-success" onclick="closeModal(\'modalDetail\');openSign(\'' + s.id_surat + '\',\'' + escHtml(s.perihal) + '\')">✍️ Sign & Setujui</button>';
+    }
+    footer += '<button class="btn btn-outline" onclick="closeModal(\'modalDetail\');openDisposisiForSurat(\'' + s.id_surat + '\')">📤 Disposisi</button>';
+    document.getElementById('detailModalFooter').innerHTML = footer;
+
+    openModal('modalDetail');
+  });
+}
+
+// ── SIGN SURAT ───────────────────────────────────────────
+function openSign(suratId, perihal) {
+  signSuratId = suratId;
+  document.getElementById('signSuratPerihal').textContent = perihal;
+  openModal('modalSign');
+}
+
+function doSign() {
+  if (!signSuratId) return;
+  var btn = document.getElementById('btnConfirmSign');
+  btn.disabled = true; btn.textContent = '⏳ Memproses...';
+  showLoading('Menandatangani surat dan generate PDF...');
+
+  callServer('updateSuratStatus', token, signSuratId, 'disetujui').then(function(res) {
+    hideLoading();
+    btn.disabled = false; btn.innerHTML = '✅ Ya, Setujui & Tanda Tangan';
+    closeModal('modalSign');
+    if (res.success) {
+      showToast('Surat berhasil ditandatangani! PDF sedang digenerate.', 'success');
+      loadDashboardData(); loadSuratMasuk(); loadPermohonan(); loadArsip();
+    } else {
+      showToast(res.message, 'error');
+    }
+  });
+}
+
+// ── DISPOSISI ────────────────────────────────────────────
+function loadUsersForDropdown() {
+  callServer('getUsersForDropdown', token).then(function(res) {
+    if (!res.success) return;
+    allUsers = res.data;
+    var dispKe = document.getElementById('dispKe');
+    dispKe.innerHTML = '<option value="">-- Pilih Pegawai --</option>';
+    res.data.filter(function(u) { return u.role === 'Pegawai'; }).forEach(function(u) {
+      dispKe.innerHTML += '<option value="' + u.id + '">' + u.nama + ' (' + u.role + ')</option>';
+    });
+
+    // Isi dropdown surat untuk disposisi
+    callServer('getSuratList', token, {}).then(function(sr) {
+      if (!sr.success) return;
+      var dispSurat = document.getElementById('dispSuratId');
+      dispSurat.innerHTML = '<option value="">-- Pilih Surat --</option>';
+      sr.data.forEach(function(s) {
+        dispSurat.innerHTML += '<option value="' + s.id_surat + '">[' + (s.nomor_surat||'') + '] ' + s.perihal + '</option>';
+      });
+    });
+  });
+}
+
+function openDisposisiForSurat(suratId) {
+  document.getElementById('dispSuratId').value = suratId;
+  openModal('modalDisposisi');
+}
+
+function loadDisposisiKeluar() {
+  callServer('getDisposisiKeluar', token).then(function(res) {
+    if (!res.success) return;
+    allDisposisiKeluar = res.data;
+    allBalasan = res.balasan || [];
+    renderDisposisi(currentDisposisiTab);
+  });
+}
+
+function switchDisposisiTab(tab, el) {
+  currentDisposisiTab = tab;
+  document.querySelectorAll('.filter-tab').forEach(function(t) { t.classList.remove('active'); });
+  el.classList.add('active');
+  document.getElementById('disposisiTabTitle').textContent = tab === 'keluar' ? 'Disposisi Terkirim' : 'Balasan dari Pegawai';
+  renderDisposisi(tab);
+}
+
+function renderDisposisi(tab) {
+  var data = tab === 'keluar' ? allDisposisiKeluar : allBalasan;
+  var tbody = document.getElementById('disposisiBody');
+  if (!data.length) { tbody.innerHTML = renderEmptyRow(6, 'Belum ada data'); return; }
+  tbody.innerHTML = data.map(function(d, i) {
+    return '<tr>' +
+      '<td>' + (i+1) + '</td>' +
+      '<td>' + escHtml(d.id_surat||'-') + '</td>' +
+      '<td>' + escHtml(tab === 'keluar' ? (d.ke_nama||'-') : (d.dari_nama||'-')) + '</td>' +
+      '<td style="max-width:250px">' + escHtml(d.instruksi||'-') + '</td>' +
+      '<td>' + fmtDateTime(d.tanggal) + '</td>' +
+      '<td><span class="badge ' + (d.status_baca === 'sudah_dibaca' ? 'badge-approved' : 'badge-pending') + '">' + (d.status_baca === 'sudah_dibaca' ? '✅ Dibaca' : '⏳ Belum Dibaca') + '</span></td>' +
+      '</tr>';
+  }).join('');
+}
+
+function doKirimDisposisi() {
+  var suratId   = document.getElementById('dispSuratId').value;
+  var keId      = document.getElementById('dispKe').value;
+  var instruksi = document.getElementById('dispInstruksi').value.trim();
+
+  if (!suratId || !keId || !instruksi) { showToast('Semua field wajib diisi.', 'warning'); return; }
+
+  var btn = document.getElementById('btnKirimDisposisi');
+  btn.disabled = true; btn.textContent = 'Mengirim...';
+
+  callServer('createDisposisi', token, {id_surat: suratId, ke_id: keId, instruksi: instruksi})
+    .then(function(res) {
+      btn.disabled = false; btn.innerHTML = '📤 Kirim Disposisi';
+      if (!res.success) { showToast(res.message, 'error'); return; }
+      closeModal('modalDisposisi');
+      showToast(res.message, 'success');
+      document.getElementById('dispInstruksi').value = '';
+      loadDisposisiKeluar();
+    });
+}
+</script>
+</body>
+</html>

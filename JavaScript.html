@@ -1,0 +1,287 @@
+<!-- JavaScript.html — Shared JS Utilities untuk semua dashboard -->
+<script>
+// ============================================================
+// AMSP — Shared JavaScript Utilities
+// ============================================================
+
+// ─── GLOBAL STATE ─────────────────────────────────────────
+var AMSP = {
+  token: sessionStorage.getItem('amsp_token') || '',
+  user: JSON.parse(sessionStorage.getItem('amsp_user') || 'null'),
+  webAppUrl: '',
+  unreadCount: 0
+};
+
+// ─── SERVER CALL WRAPPER ──────────────────────────────────
+/**
+ * Panggil fungsi GAS server-side dan return Promise
+ * @param {string} fn  - Nama fungsi GAS
+ * @param {...*} args  - Argumen
+ * @returns {Promise}
+ */
+function callServer(fn) {
+  var args = Array.prototype.slice.call(arguments, 1);
+  return new Promise(function(resolve, reject) {
+    var runner = google.script.run
+      .withSuccessHandler(resolve)
+      .withFailureHandler(function(err) {
+        reject(err);
+        showToast('Kesalahan server: ' + (err.message || err), 'error');
+      });
+    runner[fn].apply(runner, args);
+  });
+}
+
+// ─── TOAST NOTIFICATION ───────────────────────────────────
+var toastContainer = null;
+
+function showToast(msg, type) {
+  type = type || 'info';
+  if (!toastContainer) {
+    toastContainer = document.createElement('div');
+    toastContainer.className = 'toast-container';
+    document.body.appendChild(toastContainer);
+  }
+  var icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+  var toast = document.createElement('div');
+  toast.className = 'toast ' + type;
+  toast.innerHTML =
+    '<span class="toast-icon">' + (icons[type] || 'ℹ️') + '</span>' +
+    '<span class="toast-msg">' + msg + '</span>';
+  toastContainer.appendChild(toast);
+  setTimeout(function() {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(100%)';
+    toast.style.transition = 'all .3s ease';
+    setTimeout(function() { toastContainer.removeChild(toast); }, 300);
+  }, 4000);
+}
+
+// ─── LOADING OVERLAY ──────────────────────────────────────
+var loadingOverlay = null;
+
+function showLoading(msg) {
+  if (!loadingOverlay) {
+    loadingOverlay = document.createElement('div');
+    loadingOverlay.className = 'loading-overlay';
+    loadingOverlay.innerHTML =
+      '<div class="spinner"></div>' +
+      '<div class="loading-text" id="loadingMsg">Memuat...</div>';
+    document.body.appendChild(loadingOverlay);
+  }
+  document.getElementById('loadingMsg').textContent = msg || 'Memuat...';
+  loadingOverlay.classList.add('show');
+}
+
+function hideLoading() {
+  if (loadingOverlay) loadingOverlay.classList.remove('show');
+}
+
+// ─── MODAL MANAGEMENT ─────────────────────────────────────
+function openModal(modalId) {
+  var el = document.getElementById(modalId);
+  if (el) el.classList.add('show');
+}
+
+function closeModal(modalId) {
+  var el = document.getElementById(modalId);
+  if (el) el.classList.remove('show');
+}
+
+// Tutup modal saat klik overlay
+document.addEventListener('click', function(e) {
+  if (e.target.classList.contains('modal-overlay')) {
+    e.target.classList.remove('show');
+  }
+});
+
+// ─── SESSION MANAGEMENT ───────────────────────────────────
+function saveSession(data) {
+  AMSP.token = data.token;
+  AMSP.user  = { userId: data.userId, nama: data.nama, username: data.username, role: data.role };
+  sessionStorage.setItem('amsp_token', data.token);
+  sessionStorage.setItem('amsp_user',  JSON.stringify(AMSP.user));
+}
+
+function clearSession() {
+  AMSP.token = '';
+  AMSP.user  = null;
+  sessionStorage.removeItem('amsp_token');
+  sessionStorage.removeItem('amsp_user');
+}
+
+function logout() {
+  showLoading('Keluar...');
+  callServer('logout', AMSP.token).finally(function() {
+    clearSession();
+    window.top.location.href = AMSP.webAppUrl || window.location.href.split('?')[0];
+  });
+}
+
+// ─── DATE FORMATTER ───────────────────────────────────────
+function fmtDate(val) {
+  if (!val) return '-';
+  try {
+    var d = new Date(val);
+    if (isNaN(d)) return String(val);
+    return d.toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'numeric' });
+  } catch(e) { return String(val); }
+}
+
+function fmtDateTime(val) {
+  if (!val) return '-';
+  try {
+    var d = new Date(val);
+    if (isNaN(d)) return String(val);
+    return d.toLocaleDateString('id-ID', {day:'2-digit',month:'short',year:'numeric'}) + 
+           ' ' + d.toLocaleTimeString('id-ID', {hour:'2-digit',minute:'2-digit'});
+  } catch(e) { return String(val); }
+}
+
+// ─── BADGE GENERATOR ──────────────────────────────────────
+function badgeStatus(status) {
+  var labels = {
+    draft: '📝 Draft', verifikasi: '🔍 Verifikasi', disetujui: '✅ Disetujui', arsip: '📁 Arsip'
+  };
+  return '<span class="badge badge-' + status + '">' + (labels[status] || status) + '</span>';
+}
+
+function badgeJenis(jenis) {
+  var labels = { masuk: '📨 Masuk', keluar: '📤 Keluar', permohonan: '📋 Permohonan' };
+  return '<span class="badge badge-' + jenis + '">' + (labels[jenis] || jenis) + '</span>';
+}
+
+function badgeApproval(status) {
+  var icons = { approved: '✅', pending: '⏳', rejected: '❌' };
+  var labels = { approved: 'Aktif', pending: 'Pending', rejected: 'Ditolak' };
+  return '<span class="badge badge-' + status + '">' + (icons[status]||'') + ' ' + (labels[status]||status) + '</span>';
+}
+
+function badgeRole(role) {
+  return '<span class="badge badge-' + role + '">' + role + '</span>';
+}
+
+// ─── SIDEBAR NAVIGATION ───────────────────────────────────
+function initSidebar(activeMenu, userName, userRole) {
+  // Set user info di sidebar
+  var elName   = document.getElementById('sidebarUserName');
+  var elRole   = document.getElementById('sidebarUserRole');
+  var elAvatar = document.getElementById('sidebarAvatar');
+
+  if (elName)   elName.textContent   = userName  || (AMSP.user && AMSP.user.nama)     || '';
+  if (elRole)   elRole.textContent   = userRole  || (AMSP.user && AMSP.user.role)     || '';
+  if (elAvatar) elAvatar.textContent = ((userName || (AMSP.user && AMSP.user.nama) || 'U')[0]).toUpperCase();
+
+  // Set active nav item
+  document.querySelectorAll('.nav-item[data-menu]').forEach(function(item) {
+    item.classList.toggle('active', item.dataset.menu === activeMenu);
+  });
+
+  // Nav item click handler
+  document.querySelectorAll('.nav-item[data-section]').forEach(function(item) {
+    item.addEventListener('click', function() {
+      document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
+      item.classList.add('active');
+      showSection(item.dataset.section);
+    });
+  });
+}
+
+function showSection(sectionId) {
+  document.querySelectorAll('.section').forEach(function(s) { s.classList.add('hidden'); });
+  var el = document.getElementById('section-' + sectionId);
+  if (el) el.classList.remove('hidden');
+  // Update topnav title
+  var navItem = document.querySelector('[data-section="' + sectionId + '"]');
+  var title   = navItem ? navItem.querySelector('span') : null;
+  var topTitle = document.getElementById('topnavTitle');
+  if (topTitle && title) topTitle.textContent = title.textContent.trim();
+}
+
+// ─── NOTIFIKASI PANEL ─────────────────────────────────────
+var notifPanelOpen = false;
+
+function toggleNotifPanel() {
+  var panel = document.getElementById('notifPanel');
+  if (!panel) return;
+  notifPanelOpen = !notifPanelOpen;
+  panel.classList.toggle('open', notifPanelOpen);
+  if (notifPanelOpen) loadNotifikasi();
+}
+
+function loadNotifikasi() {
+  callServer('getNotifikasi', AMSP.token).then(function(res) {
+    if (!res.success) return;
+    var list = document.getElementById('notifList');
+    if (!list) return;
+
+    var count = res.data.filter(function(n) { return n.status_baca === 'belum_dibaca'; }).length;
+    updateNotifBadge(count);
+
+    if (!res.data.length) {
+      list.innerHTML = '<div class="empty-state" style="padding:40px 20px"><div class="empty-icon">🔔</div><p>Belum ada notifikasi</p></div>';
+      return;
+    }
+
+    list.innerHTML = res.data.map(function(n) {
+      return '<div class="notif-item ' + (n.status_baca === 'belum_dibaca' ? 'unread' : '') + '" onclick="markNotifRead(\'' + n.id_notif + '\')">' +
+             '<div class="notif-msg">' + escHtml(n.pesan) + '</div>' +
+             '<div class="notif-time">' + fmtDateTime(n.tanggal) + '</div>' +
+             '</div>';
+    }).join('');
+  });
+}
+
+function markNotifRead(notifId) {
+  callServer('markNotifRead', AMSP.token, notifId).then(function() {
+    loadNotifikasi();
+  });
+}
+
+function markAllNotifRead() {
+  callServer('markAllNotifRead', AMSP.token).then(function() {
+    showToast('Semua notifikasi telah ditandai dibaca.', 'success');
+    loadNotifikasi();
+  });
+}
+
+function updateNotifBadge(count) {
+  AMSP.unreadCount = count;
+  var badge = document.getElementById('notifBadge');
+  if (badge) badge.style.display = count > 0 ? 'block' : 'none';
+  var btnCount = document.getElementById('notifCount');
+  if (btnCount) btnCount.textContent = count;
+}
+
+function refreshUnreadCount() {
+  callServer('getUnreadCount', AMSP.token).then(function(res) {
+    if (res.success) updateNotifBadge(res.count);
+  });
+}
+
+// ─── ESCAPE HTML ──────────────────────────────────────────
+function escHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// ─── CONFIRM DIALOG ───────────────────────────────────────
+function confirmDialog(msg, onConfirm) {
+  if (confirm(msg)) onConfirm();
+}
+
+// ─── TABLE RENDER HELPER ──────────────────────────────────
+function renderEmptyRow(colspan, msg) {
+  return '<tr><td colspan="' + colspan + '" style="text-align:center;padding:40px;color:var(--text-muted)">' +
+         '<div style="font-size:32px;margin-bottom:8px">📄</div>' +
+         (msg || 'Tidak ada data') + '</td></tr>';
+}
+
+// ─── PERIODIC NOTIF REFRESH ───────────────────────────────
+setInterval(refreshUnreadCount, 60000); // cek setiap 1 menit
+</script>

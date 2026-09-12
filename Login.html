@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login — AMSP</title>
+  <meta name="description" content="Portal Login Aplikasi Manajemen Surat Perintah (AMSP)"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #1a56db;
+      --primary-dark: #1141a8;
+      --danger: #ef4444;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --radius: 14px;
+    }
+    html, body {
+      min-height: 100vh;
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #1a56db 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    /* ── Decorative Background ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 20% 80%, rgba(26,86,219,.3) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 20%, rgba(14,165,233,.2) 0%, transparent 50%);
+      pointer-events: none;
+    }
+
+    /* ── Login Card ── */
+    .login-card {
+      background: rgba(255,255,255,.97);
+      border-radius: 20px;
+      width: 100%;
+      max-width: 420px;
+      padding: 40px 36px;
+      box-shadow: 0 25px 80px rgba(0,0,0,.3);
+      position: relative;
+      z-index: 1;
+      animation: slideUp .5s ease;
+    }
+    @keyframes slideUp {
+      from { opacity:0; transform:translateY(30px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+
+    /* ── Logo / Header ── */
+    .login-header { text-align: center; margin-bottom: 24px; }
+    .login-logo {
+      width: 78px; height: 78px;
+      margin: 0 auto 12px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .login-logo img {
+      width: 100%; height: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 4px 10px rgba(0,0,0,.15));
+    }
+    .login-instansi {
+      font-size: 13px; font-weight: 800;
+      color: #0f172a; letter-spacing: .5px;
+      text-transform: uppercase; margin-bottom: 2px;
+    }
+    .login-title {
+      font-size: 24px; font-weight: 800;
+      color: var(--primary); letter-spacing: -.5px;
+    }
+    .login-subtitle {
+      font-size: 12px; color: var(--text-muted);
+      margin-top: 4px; text-transform: uppercase; letter-spacing: 1px; font-weight: 500;
+    }
+    .login-divider {
+      display: flex; align-items: center; gap: 10px;
+      margin: 4px 0 20px;
+    }
+    .login-divider::before, .login-divider::after {
+      content:''; flex:1; height:1px; background:var(--border);
+    }
+    .login-divider span {
+      font-size: 11px; color: var(--text-muted);
+      font-weight: 600; text-transform: uppercase; letter-spacing:.5px;
+    }
+
+    /* ── Role Tabs ── */
+    .role-tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 24px;
+      background: #f1f5f9;
+      padding: 4px;
+      border-radius: 10px;
+    }
+    .role-tab {
+      display: flex; flex-direction: column;
+      align-items: center; gap: 4px;
+      padding: 10px 8px;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: all .2s ease;
+      border: none;
+      background: none;
+      font-family: 'Inter', sans-serif;
+    }
+    .role-tab:hover:not(.active) { background: rgba(26,86,219,.06); }
+    .role-tab.active {
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,.1);
+    }
+    .role-tab .tab-icon {
+      font-size: 20px;
+      filter: grayscale(1);
+      transition: filter .2s;
+    }
+    .role-tab.active .tab-icon { filter: none; }
+    .role-tab .tab-label {
+      font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .5px;
+      color: var(--text-muted);
+      transition: color .2s;
+    }
+    .role-tab.active .tab-label { color: var(--primary); }
+
+    /* ── Form ── */
+    .form-group { margin-bottom: 16px; }
+    .input-wrap { position: relative; }
+    .input-icon {
+      position: absolute; left: 12px; top: 50%;
+      transform: translateY(-50%);
+      font-size: 16px; color: var(--text-muted); pointer-events:none;
+    }
+    input[type="text"], input[type="password"] {
+      width: 100%;
+      padding: 12px 12px 12px 40px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: 'Inter', sans-serif;
+      color: var(--text);
+      outline: none;
+      transition: all .2s ease;
+      background: #fff;
+    }
+    input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(26,86,219,.12);
+    }
+    .pass-toggle {
+      position: absolute; right: 12px; top: 50%;
+      transform: translateY(-50%);
+      background: none; border: none; cursor: pointer;
+      font-size: 16px; color: var(--text-muted);
+      transition: color .2s;
+    }
+    .pass-toggle:hover { color: var(--primary); }
+
+    /* ── Submit Button ── */
+    .btn-login {
+      width: 100%; padding: 13px;
+      background: linear-gradient(135deg, var(--primary), #0ea5e9);
+      color: #fff; border: none;
+      border-radius: 10px;
+      font-size: 15px; font-weight: 700;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      transition: all .2s ease;
+      display: flex; align-items: center;
+      justify-content: center; gap: 8px;
+      margin-top: 8px;
+      box-shadow: 0 4px 14px rgba(26,86,219,.35);
+    }
+    .btn-login:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 20px rgba(26,86,219,.45);
+    }
+    .btn-login:active { transform: translateY(0); }
+    .btn-login:disabled { opacity:.6; cursor:not-allowed; transform:none; }
+
+    /* ── Error Alert ── */
+    .alert-error {
+      background: #fef2f2; border: 1px solid #fecaca;
+      color: #b91c1c; border-radius: 8px;
+      padding: 10px 14px; font-size: 13px;
+      margin-bottom: 16px; display: none;
+      line-height: 1.4;
+    }
+    .alert-error.show { display: block; animation: fadeIn .3s ease; }
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+
+    /* ── Register Link ── */
+    .register-link {
+      text-align: center; margin-top: 20px;
+      font-size: 13px; color: var(--text-muted);
+    }
+    .register-link a {
+      color: var(--primary); font-weight: 600;
+      text-decoration: none; cursor: pointer;
+    }
+    .register-link a:hover { text-decoration: underline; }
+
+    /* ── Register Form Toggle ── */
+    .register-section { display: none; margin-top: 8px; }
+    .register-section.show { display: block; animation: fadeIn .3s ease; }
+    .back-to-login {
+      display: inline-flex; align-items: center; gap: 6px;
+      color: var(--primary); font-size: 13px; font-weight: 600;
+      cursor: pointer; margin-bottom: 16px; background:none; border:none;
+      font-family: 'Inter', sans-serif;
+    }
+    .back-to-login:hover { text-decoration:underline; }
+    .section-title { font-size:16px; font-weight:700; color:var(--text); margin-bottom:14px; }
+    .btn-register {
+      width:100%; padding:12px;
+      background: var(--primary);
+      color:#fff; border:none; border-radius:10px;
+      font-size:14px; font-weight:700;
+      font-family:'Inter',sans-serif;
+      cursor:pointer; transition:all .2s;
+      margin-top:4px;
+    }
+    .btn-register:hover { background:var(--primary-dark); }
+    .btn-register:disabled { opacity:.6; cursor:not-allowed; }
+    select {
+      width:100%;
+      padding:12px 12px 12px 40px;
+      border:1.5px solid var(--border);
+      border-radius:10px;
+      font-size:14px; font-family:'Inter',sans-serif;
+      color:var(--text); background:#fff;
+      outline:none; cursor:pointer;
+      transition:all .2s;
+      -webkit-appearance:none; appearance:none;
+    }
+    select:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(26,86,219,.12); }
+
+    /* ── Footer ── */
+    .login-footer {
+      text-align:center; margin-top:24px;
+      font-size:11px; color:var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="login-card">
+    <!-- ── LOGO ── -->
+    <div class="login-header">
+      <div class="login-logo">
+        <img src="<?!= getAppLogo() ?>" onerror="this.onerror=null;this.src='https://upload.wikimedia.org/wikipedia/commons/e/e7/Lambang_Kota_Ambon.png';" alt="Logo Pemerintah Kota Ambon" />
+      </div>
+      <div class="login-instansi">Pemerintah Kota Ambon</div>
+      <div class="login-title">AMSP</div>
+      <div class="login-subtitle">Aplikasi Manajemen Surat Perintah</div>
+    </div>
+
+    <!-- ══════════ LOGIN FORM SECTION ══════════ -->
+    <div id="loginSection">
+      <div class="login-divider"><span>Portal Login</span></div>
+
+      <!-- Role Tabs -->
+      <div class="role-tabs" role="tablist">
+        <button class="role-tab active" id="tab-admin" onclick="switchTab('Admin')" role="tab" aria-selected="true">
+          <span class="tab-icon">⚙️</span>
+          <span class="tab-label">Admin</span>
+        </button>
+        <button class="role-tab" id="tab-pimpinan" onclick="switchTab('Pimpinan')" role="tab">
+          <span class="tab-icon">👔</span>
+          <span class="tab-label">Pimpinan</span>
+        </button>
+        <button class="role-tab" id="tab-pegawai" onclick="switchTab('Pegawai')" role="tab">
+          <span class="tab-icon">👤</span>
+          <span class="tab-label">Pegawai</span>
+        </button>
+      </div>
+
+      <!-- Error Message -->
+      <div class="alert-error" id="loginError"></div>
+
+      <!-- Username -->
+      <div class="form-group">
+        <div class="input-wrap">
+          <span class="input-icon">👤</span>
+          <input type="text" id="username" placeholder="Username" autocomplete="username" autocapitalize="none"/>
+        </div>
+      </div>
+
+      <!-- Password -->
+      <div class="form-group">
+        <div class="input-wrap">
+          <span class="input-icon">🔒</span>
+          <input type="password" id="password" placeholder="Password" id="password" autocomplete="current-password"/>
+          <button class="pass-toggle" type="button" onclick="togglePass('password', this)" tabindex="-1">👁️</button>
+        </div>
+      </div>
+
+      <!-- Submit -->
+      <button class="btn-login" id="btnLogin" onclick="doLogin()">
+        <span>🚀</span> Masuk ke Aplikasi
+      </button>
+
+      <!-- Register Link (hanya untuk Pimpinan & Pegawai) -->
+      <div class="register-link" id="registerLink" style="display:none">
+        Belum punya akun? <a onclick="showRegister()">Daftar Sekarang</a>
+      </div>
+    </div>
+
+    <!-- ══════════ REGISTER SECTION ══════════ -->
+    <div class="register-section" id="registerSection">
+      <button class="back-to-login" onclick="showLogin()">← Kembali ke Login</button>
+      <div class="section-title">📝 Daftar Akun Baru</div>
+
+      <div class="alert-error" id="regError"></div>
+
+      <div class="form-group">
+        <div class="input-wrap">
+          <span class="input-icon">📝</span>
+          <input type="text" id="regNama" placeholder="Nama Lengkap"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="input-wrap">
+          <span class="input-icon">👤</span>
+          <input type="text" id="regUsername" placeholder="Username (tanpa spasi)" autocapitalize="none"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="input-wrap">
+          <span class="input-icon">🔒</span>
+          <input type="password" id="regPassword" placeholder="Password (min. 6 karakter)"/>
+          <button class="pass-toggle" type="button" onclick="togglePass('regPassword', this)" tabindex="-1">👁️</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="input-wrap">
+          <span class="input-icon">👔</span>
+          <select id="regRole">
+            <option value="">-- Pilih Role --</option>
+            <option value="Pimpinan">Pimpinan</option>
+            <option value="Pegawai">Pegawai</option>
+          </select>
+        </div>
+      </div>
+
+      <button class="btn-register" id="btnRegister" onclick="doRegister()">
+        Daftar Akun
+      </button>
+      <p style="font-size:11.5px;color:#64748b;margin-top:10px;text-align:center">
+        Akun akan menunggu persetujuan Admin sebelum dapat digunakan.
+      </p>
+    </div>
+
+    <div class="login-footer">© 2024 AMSP — Semua hak dilindungi</div>
+  </div>
+
+  <script>
+    var selectedRole = 'Admin';
+    var webAppUrl = '';
+    var serverInitRole = '<?= initRole ?>';
+
+    // Ambil URL web app dari GAS
+    google.script.run.withSuccessHandler(function(url) {
+      webAppUrl = url;
+    }).getWebAppUrl();
+
+    function switchTab(role) {
+      selectedRole = role;
+      document.querySelectorAll('.role-tab').forEach(function(t) { t.classList.remove('active'); });
+      var tabEl = document.getElementById('tab-' + role.toLowerCase());
+      if (tabEl) tabEl.classList.add('active');
+
+      // Tampilkan link register hanya untuk Pimpinan & Pegawai
+      document.getElementById('registerLink').style.display = (role !== 'Admin') ? 'block' : 'none';
+      document.getElementById('loginError').classList.remove('show');
+    }
+
+    // Auto-select tab jika ada parameter role
+    (function checkInitialRole() {
+      var roleToSet = '';
+      if (serverInitRole && serverInitRole !== 'undefined') {
+        roleToSet = serverInitRole;
+      } else {
+        try {
+          var params = new URLSearchParams(window.location.search);
+          if (params.get('role')) roleToSet = params.get('role');
+        } catch(e) {}
+      }
+      if (roleToSet) {
+        var r = roleToSet.charAt(0).toUpperCase() + roleToSet.slice(1).toLowerCase();
+        if (r === 'Admin' || r === 'Pimpinan' || r === 'Pegawai') {
+          switchTab(r);
+        }
+      }
+    })();
+
+    function togglePass(inputId, btn) {
+      var input = document.getElementById(inputId);
+      if (input.type === 'password') { input.type = 'text'; btn.textContent = '🙈'; }
+      else { input.type = 'password'; btn.textContent = '👁️'; }
+    }
+
+    function showError(id, msg) {
+      var el = document.getElementById(id);
+      el.textContent = msg;
+      el.classList.add('show');
+    }
+    function clearError(id) {
+      document.getElementById(id).classList.remove('show');
+    }
+
+    function showRegister() {
+      document.getElementById('loginSection').style.display = 'none';
+      document.getElementById('registerSection').classList.add('show');
+    }
+    function showLogin() {
+      document.getElementById('loginSection').style.display = 'block';
+      document.getElementById('registerSection').classList.remove('show');
+      clearError('regError');
+    }
+
+    function doLogin() {
+      var username = document.getElementById('username').value.trim();
+      var password = document.getElementById('password').value;
+      clearError('loginError');
+
+      if (!username || !password) {
+        showError('loginError', 'Username dan password wajib diisi.');
+        return;
+      }
+
+      var btn = document.getElementById('btnLogin');
+      btn.disabled = true;
+      btn.innerHTML = '<span style="display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.5);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite"></span> Memproses...';
+
+      google.script.run
+        .withSuccessHandler(function(res) {
+          btn.disabled = false;
+          btn.innerHTML = '<span>🚀</span> Masuk ke Aplikasi';
+
+          if (!res.success) {
+            showError('loginError', res.message);
+            return;
+          }
+
+          // Simpan session
+          sessionStorage.setItem('amsp_token', res.token);
+          sessionStorage.setItem('amsp_user', JSON.stringify({
+            userId: res.userId, nama: res.nama, username: res.username, role: res.role
+          }));
+
+          // Redirect ke dashboard sesuai role
+          var pageMap = { Admin: 'admin', Pimpinan: 'pimpinan', Pegawai: 'pegawai' };
+          var page = pageMap[res.role] || 'login';
+          window.top.location.href = webAppUrl + '?page=' + page + '&token=' + res.token;
+        })
+        .withFailureHandler(function(err) {
+          btn.disabled = false;
+          btn.innerHTML = '<span>🚀</span> Masuk ke Aplikasi';
+          showError('loginError', 'Terjadi kesalahan koneksi. Coba lagi.');
+        })
+        .login(username, password, selectedRole);
+    }
+
+    function doRegister() {
+      var nama     = document.getElementById('regNama').value.trim();
+      var username = document.getElementById('regUsername').value.trim();
+      var password = document.getElementById('regPassword').value;
+      var role     = document.getElementById('regRole').value;
+      clearError('regError');
+
+      if (!nama || !username || !password || !role) {
+        showError('regError', 'Semua field wajib diisi.');
+        return;
+      }
+      if (password.length < 6) {
+        showError('regError', 'Password minimal 6 karakter.');
+        return;
+      }
+
+      var btn = document.getElementById('btnRegister');
+      btn.disabled = true;
+      btn.textContent = 'Mendaftar...';
+
+      google.script.run
+        .withSuccessHandler(function(res) {
+          btn.disabled = false;
+          btn.textContent = 'Daftar Akun';
+          if (!res.success) { showError('regError', res.message); return; }
+          alert('✅ ' + res.message);
+          showLogin();
+          document.getElementById('regNama').value = '';
+          document.getElementById('regUsername').value = '';
+          document.getElementById('regPassword').value = '';
+          document.getElementById('regRole').value = '';
+        })
+        .withFailureHandler(function(err) {
+          btn.disabled = false;
+          btn.textContent = 'Daftar Akun';
+          showError('regError', 'Terjadi kesalahan. Coba lagi.');
+        })
+        .registerUser({ nama: nama, username: username, password: password, role: role });
+    }
+
+    // Tekan Enter untuk login
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        if (document.getElementById('registerSection').classList.contains('show')) doRegister();
+        else doLogin();
+      }
+    });
+  </script>
+  <style>
+    @keyframes spin { to { transform:rotate(360deg); } }
+  </style>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "scriptId": "1FluKklYSIwRexsJ_FlxIinx31Rnb0bc2ugMYJDZCvfrKmxGpz7GtujtI",
+  "rootDir": "./",
+  "filePushOrder": [
+    "Code.gs",
+    "Auth.gs",
+    "SuratHandler.gs",
+    "DisposisiHandler.gs",
+    "PDFHandler.gs",
+    "AdminHandler.gs",
+    "CSS.html",
+    "JavaScript.html",
+    "Login.html",
+    "DashboardAdmin.html",
+    "DashboardPimpinan.html",
+    "DashboardPegawai.html",
+    "ScanTTD.html"
+  ]
+}
