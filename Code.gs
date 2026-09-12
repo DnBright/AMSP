@@ -30,6 +30,26 @@ var SHEET_NAMES = {
 };
 
 // ============================================================
+// OTORISASI GOOGLE DRIVE, DOKUMEN & SPREADSHEET
+// ============================================================
+function otorisasiDriveDanPDF() {
+  Logger.log('Memeriksa izin Google Docs...');
+  var testDoc = DocumentApp.create('AMSP_Otorisasi_Test');
+  var docId = testDoc.getId();
+
+  Logger.log('Memeriksa izin Google Drive...');
+  var docFile = DriveApp.getFileById(docId);
+  var folder = DriveApp.getFoldersByName('AMSP_Surat_PDF');
+  if (!folder.hasNext()) {
+    DriveApp.createFolder('AMSP_Surat_PDF');
+  }
+
+  docFile.setTrashed(true);
+  Logger.log('✅ Semua izin Google Drive & Docs berhasil diotorisasi!');
+  return 'Otorisasi Berhasil!';
+}
+
+// ============================================================
 // MAIN ROUTER — doGet(e)
 // ============================================================
 function doGet(e) {
