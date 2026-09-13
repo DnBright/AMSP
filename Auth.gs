@@ -164,3 +164,43 @@ function getCurrentUser(token) {
   if (!session.valid) return { success: false, message: session.message };
   return { success: true, user: session.user };
 }
+
+// ============================================================
+// GANTI PASSWORD (oleh user sendiri)
+// ============================================================
+function changePassword(token, passwordLama, passwordBaru) {
+  try {
+    var session = validateSession(token);
+    if (!session.valid) return { success: false, message: session.message };
+    var user = session.user;
+
+    if (!passwordLama || !passwordBaru) {
+      return { success: false, message: 'Password lama dan password baru wajib diisi.' };
+    }
+    if (passwordBaru.length < 6) {
+      return { success: false, message: 'Password baru minimal 6 karakter.' };
+    }
+
+    var sheet = getSheet(SHEET_NAMES.USERS);
+    var sheetData = sheet.getDataRange().getValues();
+    var headers = sheetData[0];
+    var idIdx = headers.indexOf('id');
+    var passIdx = headers.indexOf('password');
+
+    for (var i = 1; i < sheetData.length; i++) {
+      if (String(sheetData[i][idIdx]) === String(user.userId)) {
+        var currentPass = String(sheetData[i][passIdx]);
+        if (currentPass !== String(passwordLama)) {
+          return { success: false, message: 'Password lama tidak sesuai.' };
+        }
+        sheet.getRange(i + 1, passIdx + 1).setValue(passwordBaru);
+        SpreadsheetApp.flush();
+        return { success: true, message: 'Password berhasil diubah. Silakan login ulang.' };
+      }
+    }
+    return { success: false, message: 'Akun tidak ditemukan.' };
+  } catch (e) {
+    Logger.log('changePassword error: ' + e.toString());
+    return { success: false, message: 'Terjadi kesalahan: ' + e.toString() };
+  }
+}

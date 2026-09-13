@@ -16,10 +16,10 @@
 // KONFIGURASI NAMA APLIKASI
 // ============================================================
 var APP_CONFIG = {
-  nama_aplikasi: 'AMSP',
-  nama_lengkap: 'Aplikasi Manajemen Surat Perintah',
-  nama_instansi: 'Pemerintah Kota Ambon',
-  versi: '1.0.0'
+  nama_aplikasi: 'AMSP PUPR',
+  nama_lengkap: 'Aplikasi Manajemen Surat Perintah PUPR',
+  nama_instansi: 'Dinas PUPR Kota Ambon',
+  versi: '2.0.0'
 };
 
 var SHEET_NAMES = {
@@ -92,7 +92,7 @@ function doGet(e) {
   }
 
   return template.evaluate()
-    .setTitle('AMSP — Aplikasi Manajemen Surat Perintah')
+    .setTitle('AMSP PUPR — Aplikasi Manajemen Surat Perintah')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1.0');
 }

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Dashboard Admin — AMSP</title>
+  <title>Dashboard Admin — AMSP PUPR Kota Ambon</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
   <?!= include('CSS'); ?>
@@ -16,8 +16,8 @@
     <div class="sidebar-brand">
       <img src="<?!= getAppLogo() ?>" onerror="this.onerror=null;this.src='https://upload.wikimedia.org/wikipedia/commons/e/e7/Lambang_Kota_Ambon.png';" class="brand-logo-img" alt="Logo Kota Ambon"/>
       <div>
-        <div class="brand-name">AMSP</div>
-        <div class="brand-sub">Kota Ambon</div>
+        <div class="brand-name">AMSP PUPR</div>
+        <div class="brand-sub">Dinas PUPR Kota Ambon</div>
       </div>
     </div>
     <div class="sidebar-user">
@@ -37,6 +37,10 @@
       <div class="nav-label">Data Surat</div>
       <div class="nav-item" data-section="surat" onclick="switchSection('surat')">
         <span class="nav-icon">📋</span><span>Semua Surat</span>
+      </div>
+      <div class="nav-label">Pengaturan</div>
+      <div class="nav-item" data-section="akun" onclick="switchSection('akun')">
+        <span class="nav-icon">🔑</span><span>Ganti Password</span>
       </div>
     </nav>
     <div class="sidebar-footer">
@@ -145,6 +149,33 @@
                 <tr><td colspan="8" style="text-align:center;padding:40px"><div class="spinner"></div></td></tr>
               </tbody>
             </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SECTION: GANTI PASSWORD ── -->
+      <div id="section-akun" class="section hidden">
+        <div class="page-header">
+          <h1>🔑 Ganti Password</h1>
+          <p>Ubah password akun Admin Anda.</p>
+        </div>
+        <div class="card" style="max-width:480px">
+          <div class="card-header"><span class="card-title">Form Ganti Password</span></div>
+          <div class="card-body">
+            <div id="akunAdminMsg" style="display:none;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px"></div>
+            <div class="form-group">
+              <label class="form-label">Password Lama *</label>
+              <input type="password" class="form-control" id="adminPassLama" placeholder="Masukkan password lama"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Password Baru *</label>
+              <input type="password" class="form-control" id="adminPassBaru" placeholder="Minimal 6 karakter"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Konfirmasi Password Baru *</label>
+              <input type="password" class="form-control" id="adminPassKonfirmasi" placeholder="Ulangi password baru"/>
+            </div>
+            <button class="btn btn-primary" id="btnGantiPassAdmin" onclick="doGantiPasswordAdmin()">🔒 Ganti Password</button>
           </div>
         </div>
       </div>
@@ -283,12 +314,80 @@ window.addEventListener('load', function() {
 var activeSection = 'users';
 function switchSection(name) {
   document.querySelectorAll('.section').forEach(function(s) { s.classList.add('hidden'); });
-  document.getElementById('section-' + name).classList.remove('hidden');
+  var target = document.getElementById('section-' + name);
+  if (target) target.classList.remove('hidden');
   document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
-  document.querySelector('[data-section="' + name + '"]').classList.add('active');
-  var titles = { users:'Kelola Pengguna', pending:'Persetujuan Akun', surat:'Semua Surat' };
+  var activeNav = document.querySelector('[data-section="' + name + '"]');
+  if (activeNav) activeNav.classList.add('active');
+  var titles = {
+    users: 'Kelola Pengguna',
+    pending: 'Persetujuan Akun',
+    surat: 'Semua Surat',
+    akun: 'Pengaturan Akun'
+  };
   document.getElementById('topnavTitle').textContent = titles[name] || name;
   activeSection = name;
+}
+
+function doGantiPasswordAdmin() {
+  var pLama = document.getElementById('adminPassLama').value;
+  var pBaru = document.getElementById('adminPassBaru').value;
+  var pKonf = document.getElementById('adminPassKonfirmasi').value;
+  var msgEl = document.getElementById('akunAdminMsg');
+  var btnEl = document.getElementById('btnGantiPassAdmin');
+
+  if (!pLama || !pBaru || !pKonf) {
+    msgEl.style.display = 'block';
+    msgEl.style.background = '#fef2f2';
+    msgEl.style.color = '#dc2626';
+    msgEl.textContent = 'Semua field wajib diisi.';
+    return;
+  }
+  if (pBaru.length < 6) {
+    msgEl.style.display = 'block';
+    msgEl.style.background = '#fef2f2';
+    msgEl.style.color = '#dc2626';
+    msgEl.textContent = 'Password baru minimal 6 karakter.';
+    return;
+  }
+  if (pBaru !== pKonf) {
+    msgEl.style.display = 'block';
+    msgEl.style.background = '#fef2f2';
+    msgEl.style.color = '#dc2626';
+    msgEl.textContent = 'Konfirmasi password baru tidak cocok.';
+    return;
+  }
+
+  btnEl.disabled = true;
+  btnEl.textContent = 'Memproses...';
+  msgEl.style.display = 'none';
+
+  callServer('changePassword', token, pLama, pBaru).then(function(res) {
+    btnEl.disabled = false;
+    btnEl.innerHTML = '🔒 Ganti Password';
+    msgEl.style.display = 'block';
+    if (res.success) {
+      msgEl.style.background = '#f0fdf4';
+      msgEl.style.color = '#16a34a';
+      msgEl.textContent = res.message;
+      document.getElementById('adminPassLama').value = '';
+      document.getElementById('adminPassBaru').value = '';
+      document.getElementById('adminPassKonfirmasi').value = '';
+      showToast('Password berhasil diubah!', 'success');
+    } else {
+      msgEl.style.background = '#fef2f2';
+      msgEl.style.color = '#dc2626';
+      msgEl.textContent = res.message;
+      showToast(res.message, 'error');
+    }
+  }).catch(function(err) {
+    btnEl.disabled = false;
+    btnEl.innerHTML = '🔒 Ganti Password';
+    msgEl.style.display = 'block';
+    msgEl.style.background = '#fef2f2';
+    msgEl.style.color = '#dc2626';
+    msgEl.textContent = 'Terjadi kesalahan: ' + (err.message || err);
+  });
 }
 
 // ─── LOAD USERS ───────────────────────────────────────────

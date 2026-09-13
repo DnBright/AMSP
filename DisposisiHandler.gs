@@ -25,6 +25,24 @@ function createDisposisi(token, data) {
   // Ambil nama penerima
   var penerimaNama = getUserNameById_(data.ke_id);
 
+  // ── Upload file lampiran disposisi ke Drive (jika ada) ──
+  var dispFileUrl = '';
+  if (data.file_base64 && data.file_name) {
+    try {
+      var dispFolder = getOrCreateFolder_(PDF_FOLDER_NAME);
+      var dispBlob = Utilities.newBlob(
+        Utilities.base64Decode(data.file_base64.replace(/^data:[^;]+;base64,/, '')),
+        data.file_type || 'application/octet-stream',
+        data.file_name
+      );
+      var dispFile = dispFolder.createFile(dispBlob);
+      dispFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      dispFileUrl = 'https://drive.google.com/file/d/' + dispFile.getId() + '/view?usp=sharing';
+    } catch (uploadErr) {
+      Logger.log('Disposisi file upload error (non-fatal): ' + uploadErr.toString());
+    }
+  }
+
   sheet.appendRow([
     disposisiId,
     data.id_surat,
@@ -34,15 +52,14 @@ function createDisposisi(token, data) {
     penerimaNama,
     data.instruksi,
     now.toISOString(),
-    'belum_dibaca'
+    'belum_dibaca',
+    dispFileUrl           // file_url (kolom ke-10)
   ]);
 
   // Kirim notifikasi ke penerima
-  createNotifikasi(
-    data.ke_id,
-    '📋 Anda mendapat disposisi dari ' + user.nama + ': "' + data.instruksi + '"',
-    'disposisi'
-  );
+  var notifMsg = '📋 Anda mendapat disposisi dari ' + user.nama + ': "' + data.instruksi + '"';
+  if (dispFileUrl) notifMsg += ' (dengan lampiran file)';
+  createNotifikasi(data.ke_id, notifMsg, 'disposisi');
 
   return { success: true, message: 'Disposisi berhasil dikirim ke ' + penerimaNama + '.', disposisiId: disposisiId };
 }
