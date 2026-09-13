@@ -27,6 +27,24 @@ function generateSuratPDF(suratId) {
     // === MARGIN HALAMAN ===
     body.setMarginTop(36).setMarginBottom(36).setMarginLeft(54).setMarginRight(54);
 
+    // ── WATERMARK "AMSP BENGKEL" (PERSIS SEPERTI CONTOH FOTO) ──
+    try {
+      if (typeof getWatermarkBlob === 'function') {
+        var wmBlob = getWatermarkBlob();
+        if (wmBlob) {
+          var firstP = body.getParagraphs()[0] || body.appendParagraph('');
+          var posImg = firstP.addPositionedImage(wmBlob);
+          posImg.setWidth(460);
+          posImg.setHeight(460);
+          posImg.setLeftOffset(20);
+          posImg.setTopOffset(170);
+          posImg.setLayout(DocumentApp.PositionedLayout.ABOVE_TEXT);
+        }
+      }
+    } catch (eWm) {
+      Logger.log('Watermark notice (non-fatal): ' + eWm.toString());
+    }
+
     // ── KOP SURAT POJOK KANAN ATAS (PERSIS SEPERTI CONTOH) ──
     var kopTable = body.appendTable([
       ['', '', '']
