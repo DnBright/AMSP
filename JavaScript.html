@@ -118,26 +118,103 @@ function logout() {
   });
 }
 
-// ─── DATE FORMATTER ───────────────────────────────────────
+// ─── DATE & TIME HELPERS ──────────────────────────────────
+function parseDateSafe(val) {
+  if (!val) return null;
+  if (val instanceof Date) return isNaN(val.getTime()) ? null : val;
+  if (typeof val === 'number') {
+    var dNum = new Date(val);
+    return isNaN(dNum.getTime()) ? null : dNum;
+  }
+  if (typeof val === 'string') {
+    var str = val.trim();
+    if (!str) return null;
+    // Format YYYY-MM-DD (tanpa jam) -> parse sebagai tanggal lokal agar tidak tergeser UTC
+    var m = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (m) {
+      return new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10));
+    }
+    var d = new Date(str);
+    if (!isNaN(d.getTime())) return d;
+  }
+  return null;
+}
+
+function getLocalDateString(d) {
+  d = d || new Date();
+  var year = d.getFullYear();
+  var month = String(d.getMonth() + 1).padStart(2, '0');
+  var day = String(d.getDate()).padStart(2, '0');
+  return year + '-' + month + '-' + day;
+}
+
 function fmtDate(val) {
   if (!val) return '-';
   try {
-    var d = new Date(val);
-    if (isNaN(d)) return String(val);
-    var datePart = d.toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'numeric' });
-    var timePart = d.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
-    return datePart + ', ' + timePart;
+    var d = parseDateSafe(val);
+    if (!d) return String(val);
+    return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
   } catch(e) { return String(val); }
 }
 
 function fmtDateTime(val) {
   if (!val) return '-';
   try {
-    var d = new Date(val);
-    if (isNaN(d)) return String(val);
-    return d.toLocaleDateString('id-ID', {day:'2-digit',month:'short',year:'numeric'}) + 
-           ' ' + d.toLocaleTimeString('id-ID', {hour:'2-digit',minute:'2-digit'});
+    var d = parseDateSafe(val);
+    if (!d) return String(val);
+    var datePart = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+    var hours = String(d.getHours()).padStart(2, '0');
+    var minutes = String(d.getMinutes()).padStart(2, '0');
+    return datePart + ', ' + hours + ':' + minutes;
   } catch(e) { return String(val); }
+}
+
+function fmtTime(val) {
+  if (!val) return '-';
+  try {
+    var d = parseDateSafe(val);
+    if (!d) return String(val);
+    var hours = String(d.getHours()).padStart(2, '0');
+    var minutes = String(d.getMinutes()).padStart(2, '0');
+    return hours + ':' + minutes;
+  } catch(e) { return String(val); }
+}
+
+// ─── REAL-TIME LIVE CLOCK ──────────────────────────────────
+function initLiveClock() {
+  function update() {
+    var now = new Date();
+    var days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    var months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    
+    var dayName = days[now.getDay()];
+    var dayNum = String(now.getDate()).padStart(2, '0');
+    var monthName = months[now.getMonth()];
+    var year = now.getFullYear();
+    
+    var hours = String(now.getHours()).padStart(2, '0');
+    var mins = String(now.getMinutes()).padStart(2, '0');
+    var secs = String(now.getSeconds()).padStart(2, '0');
+    
+    var dateStr = dayName + ', ' + dayNum + ' ' + monthName + ' ' + year;
+    var timeStr = hours + ':' + mins + ':' + secs + ' WIT';
+    
+    var elDate = document.getElementById('clockDate');
+    var elTime = document.getElementById('clockTime');
+    var elFull = document.getElementById('liveClockText');
+    
+    if (elDate) elDate.textContent = dateStr;
+    if (elTime) elTime.textContent = timeStr;
+    if (elFull) elFull.textContent = dateStr + ' • ' + timeStr;
+  }
+  update();
+  setInterval(update, 1000);
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initLiveClock);
+} else {
+  initLiveClock();
 }
 
 // ─── BADGE GENERATOR ──────────────────────────────────────

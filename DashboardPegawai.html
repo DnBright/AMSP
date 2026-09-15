@@ -60,6 +60,12 @@
     <header class="topnav">
       <div class="topnav-title" id="topnavTitle">Surat Saya</div>
       <div class="topnav-right">
+        <div class="topnav-clock" id="liveClock" title="Waktu Nyata (WIT)">
+          <span class="clock-icon">🕒</span>
+          <span class="clock-date" id="clockDate">--</span>
+          <span class="clock-divider">|</span>
+          <span class="clock-time" id="clockTime">--:--:-- WIT</span>
+        </div>
         <button class="notif-btn" onclick="toggleNotifPanel()" title="Notifikasi">
           🔔<span class="notif-badge hidden" id="notifBadge"></span>
         </button>
@@ -458,8 +464,8 @@ window.addEventListener('load', function() {
   AMSP.token = token; AMSP.user = userData;
   google.script.run.withSuccessHandler(function(url) { AMSP.webAppUrl = url; }).getWebAppUrl();
   initSidebar('surat-saya', userData && userData.nama, 'Pegawai');
-  // Set tanggal default hari ini
-  var today = new Date().toISOString().split('T')[0];
+  // Set tanggal default hari ini (waktu lokal)
+  var today = getLocalDateString();
   document.getElementById('cTanggal').value = today;
   document.getElementById('pTanggal').value = today;
   // Set pengirim default
@@ -852,7 +858,7 @@ function openEditSurat(suratId) {
     document.getElementById('editSuratId').value  = s.id_surat;
     document.getElementById('editSifat').value    = s.sifat||'Biasa';
     document.getElementById('editPerihal').value  = s.perihal||'';
-    document.getElementById('editTanggal').value  = s.tanggal ? new Date(s.tanggal).toISOString().split('T')[0] : '';
+    document.getElementById('editTanggal').value  = s.tanggal ? getLocalDateString(parseDateSafe(s.tanggal)) : '';
     document.getElementById('editWaktu').value    = s.waktu||'';
     document.getElementById('editTempat').value   = s.tempat||'';
     document.getElementById('editLampiran').value = s.lampiran||'';
@@ -1050,7 +1056,7 @@ function resetForm(type) {
       if (el) el.value = '';
     });
     document.getElementById('cSifat').value = 'Biasa';
-    document.getElementById('cTanggal').value = new Date().toISOString().split('T')[0];
+    document.getElementById('cTanggal').value = getLocalDateString();
     if (userData) document.getElementById('cPengirim').value = userData.nama;
     var f = document.getElementById('cFile');
     if (f) f.value = '';
@@ -1062,7 +1068,7 @@ function resetForm(type) {
       if (el) el.value = '';
     });
     document.getElementById('pSifat').value = 'Biasa';
-    document.getElementById('pTanggal').value = new Date().toISOString().split('T')[0];
+    document.getElementById('pTanggal').value = getLocalDateString();
     var pf = document.getElementById('pFile');
     if (pf) pf.value = '';
     document.getElementById('pFileInfo').textContent = '';

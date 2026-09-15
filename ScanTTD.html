@@ -269,10 +269,31 @@
   var labelJenis = { masuk: '📨 Surat Masuk', keluar: '📤 Surat Keluar', permohonan: '📋 Surat Permohonan' };
   var labelStatus = { disetujui: '✅ Disetujui', arsip: '📁 Diarsipkan' };
 
+  function parseDateSafe(val) {
+    if (!val) return null;
+    if (val instanceof Date) return isNaN(val.getTime()) ? null : val;
+    if (typeof val === 'number') {
+      var dNum = new Date(val);
+      return isNaN(dNum.getTime()) ? null : dNum;
+    }
+    if (typeof val === 'string') {
+      var str = val.trim();
+      if (!str) return null;
+      var m = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (m) {
+        return new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10));
+      }
+      var d = new Date(str);
+      if (!isNaN(d.getTime())) return d;
+    }
+    return null;
+  }
+
   function fmtDate(val) {
     if (!val) return '-';
     try {
-      var d = new Date(val);
+      var d = parseDateSafe(val);
+      if (!d) return String(val);
       return d.toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' });
     } catch(e) { return String(val); }
   }
@@ -280,13 +301,16 @@
   function fmtDateTime(val) {
     if (!val) return '-';
     try {
-      var d = new Date(val);
-      return d.toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' }) +
-             ', pukul ' + d.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' }) + ' WIB';
+      var d = parseDateSafe(val);
+      if (!d) return String(val);
+      var datePart = d.toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' });
+      var hours = String(d.getHours()).padStart(2, '0');
+      var minutes = String(d.getMinutes()).padStart(2, '0');
+      return datePart + ', pukul ' + hours + ':' + minutes + ' WIT';
     } catch(e) { return String(val); }
   }
 
-  // Set waktu scan sekarang
+  // Set waktu scan sekarang (live)
   document.getElementById('scanTime').textContent = 'Dipindai: ' + fmtDateTime(new Date());
 
   // Tidak ada SURAT_ID di URL

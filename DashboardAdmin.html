@@ -54,6 +54,12 @@
     <header class="topnav">
       <div class="topnav-title" id="topnavTitle">Kelola Pengguna</div>
       <div class="topnav-right">
+        <div class="topnav-clock" id="liveClock" title="Waktu Nyata (WIT)">
+          <span class="clock-icon">🕒</span>
+          <span class="clock-date" id="clockDate">--</span>
+          <span class="clock-divider">|</span>
+          <span class="clock-time" id="clockTime">--:--:-- WIT</span>
+        </div>
         <button class="notif-btn" onclick="toggleNotifPanel()" title="Notifikasi">
           🔔<span class="notif-badge hidden" id="notifBadge"></span>
         </button>
