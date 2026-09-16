@@ -66,6 +66,35 @@ function createDisposisi(token, data) {
 }
 
 // ============================================================
+// HELPER: ENRICH DISPOSISI DENGAN DATA SURAT TERKAIT
+// ============================================================
+function enrichDisposisiWithSurat_(disposisiList) {
+  if (!disposisiList || !disposisiList.length) return [];
+  try {
+    var suratSheet = getSheet(SHEET_NAMES.SURAT);
+    var allSurat = sheetToObjects(suratSheet);
+    var suratMap = {};
+    for (var s = 0; s < allSurat.length; s++) {
+      var item = allSurat[s];
+      if (item.id_surat) suratMap[item.id_surat] = item;
+      if (item.nomor_surat) suratMap[item.nomor_surat] = item;
+    }
+
+    disposisiList.forEach(function (d) {
+      var matched = suratMap[d.id_surat] || {};
+      d.surat_nomor = matched.nomor_surat || d.id_surat || '-';
+      d.surat_perihal = matched.perihal || '-';
+      d.surat_file_url = matched.file_url || '';
+      d.surat_lampiran_url = matched.lampiran_file_url || '';
+      d.surat_jenis = matched.jenis_surat || '';
+    });
+  } catch (err) {
+    Logger.log('enrichDisposisiWithSurat_ error: ' + err.toString());
+  }
+  return disposisiList;
+}
+
+// ============================================================
 // GET DISPOSISI MASUK (untuk Pegawai)
 // ============================================================
 function getDisposisiMasuk(token) {
@@ -81,6 +110,7 @@ function getDisposisiMasuk(token) {
   });
 
   masuk.sort(function (a, b) { return new Date(b.tanggal) - new Date(a.tanggal); });
+  masuk = enrichDisposisiWithSurat_(masuk);
   return { success: true, data: masuk };
 }
 
@@ -105,6 +135,8 @@ function getDisposisiKeluar(token) {
   });
 
   keluar.sort(function (a, b) { return new Date(b.tanggal) - new Date(a.tanggal); });
+  keluar = enrichDisposisiWithSurat_(keluar);
+  balasan = enrichDisposisiWithSurat_(balasan);
   return { success: true, data: keluar, balasan: balasan };
 }
 

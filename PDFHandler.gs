@@ -139,7 +139,7 @@ function generateSuratPDF(suratId) {
 
     // ── TABEL RINCIAN KEGIATAN ──
     var hariTgl = formatHariTanggalIndo_(surat.tanggal || surat.tanggal_dibuat || new Date()) || '-';
-    var waktuVal = (surat.waktu && String(surat.waktu).trim()) ? String(surat.waktu).trim() : '09:00 WIT s.d. Selesai';
+    var waktuVal = formatWaktuIndo_(surat.waktu);
     var tempatVal = (surat.tempat && String(surat.tempat).trim()) ? String(surat.tempat).trim() : 'Dinas Pekerjaan Umum dan Penataan Ruang Kota Ambon';
     var kegiatanVal = (surat.isi_surat && String(surat.isi_surat).trim()) ? String(surat.isi_surat).trim() : ((surat.perihal && String(surat.perihal).trim()) ? String(surat.perihal).trim() : '-');
 
@@ -285,6 +285,12 @@ function generateSuratPDF(suratId) {
       pT3.editAsText().setFontFamily('Arial').setFontSize(9);
     }
 
+    if (surat.lampiran_file_url) {
+      leftCell.appendParagraph('');
+      var pLampiranLink = leftCell.appendParagraph('📎 Berkas Lampiran: Buka Berkas Lampiran');
+      pLampiranLink.editAsText().setFontFamily('Arial').setFontSize(9).setLinkUrl(surat.lampiran_file_url);
+    }
+
     doc.saveAndClose();
 
     // ── EXPORT KE PDF ──
@@ -371,6 +377,29 @@ function formatHariTanggalIndo_(dateVal) {
     var bulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
     return hari[d.getDay()] + ' / ' + d.getDate() + ' ' + bulan[d.getMonth()] + ' ' + d.getFullYear();
   } catch(e) { return ''; }
+}
+
+function formatWaktuIndo_(waktuVal) {
+  if (!waktuVal) return '09:00 WIT s.d. Selesai';
+  var str = String(waktuVal).trim();
+  if (!str) return '09:00 WIT s.d. Selesai';
+  
+  // Jika format ISO string (misal: 2026-09-16T17:00:00.000Z)
+  if (str.indexOf('T') > -1 || (str.indexOf('-') > -1 && str.indexOf(':') > -1)) {
+    try {
+      var d = new Date(str);
+      if (!isNaN(d.getTime())) {
+        var h = Utilities.formatDate(d, 'GMT+9', 'HH:mm');
+        return h + ' WIT s.d. Selesai';
+      }
+    } catch(e) {}
+  }
+  
+  if (/^\d{1,2}[:.]\d{2}$/.test(str)) {
+    return str.replace('.', ':') + ' WIT s.d. Selesai';
+  }
+  
+  return str;
 }
 
 // ============================================================

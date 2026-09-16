@@ -583,10 +583,11 @@ function renderSuratAdmin(data) {
       '<td>' + escHtml(s.nama_pembuat||'-') + '</td>' +
       '<td>' + fmtDateTime(s.tanggal_dibuat || s.tanggal) + '</td>' +
       '<td>' + badgeStatus(s.status) + '</td>' +
-      '<td>' +
-        (s.file_url ? '<a href="' + s.file_url + '" target="_blank" class="btn btn-outline btn-xs">📄 PDF</a> ' : '') +
+      '<td><div class="d-flex gap-8">' +
+        (s.file_url ? '<a href="' + s.file_url + '" target="_blank" class="btn btn-outline btn-xs">📄 PDF</a>' : '') +
+        (s.lampiran_file_url && s.lampiran_file_url !== s.file_url ? '<a href="' + s.lampiran_file_url + '" target="_blank" class="btn btn-outline btn-xs" style="color:#059669;border-color:#10b981">📎 Lampiran</a>' : '') +
         '<button class="btn btn-danger btn-xs" onclick="doDeleteSurat(\'' + s.id_surat + '\')">🗑️</button>' +
-      '</td></tr>';
+      '</div></td></tr>';
   }).join('');
 }
 

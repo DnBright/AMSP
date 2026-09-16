@@ -138,13 +138,13 @@ function initializeSheets() {
     'status_approval', 'tanggal_daftar', 'email'
   ]);
 
-  // ── Sheet Surat (21 Kolom Lengkap) ──
+  // ── Sheet Surat (22 Kolom Lengkap) ──
   setupSheet_(ss, SHEET_NAMES.SURAT, [
     'id_surat', 'jenis_surat', 'nomor_surat', 'pengirim', 'penerima',
     'tembusan', 'perihal', 'isi_surat', 'tanggal', 'status',
     'file_url', 'id_pembuat', 'nama_pembuat',
     'id_pimpinan_ttd', 'nama_pimpinan_ttd', 'tanggal_ttd', 'tanggal_dibuat',
-    'sifat', 'waktu', 'tempat', 'lampiran'
+    'sifat', 'waktu', 'tempat', 'lampiran', 'lampiran_file_url'
   ]);
 
   // ── Sheet Disposisi ──
@@ -253,7 +253,12 @@ var SURAT_STANDARD_HEADERS = [
   'tembusan', 'perihal', 'isi_surat', 'tanggal', 'status',
   'file_url', 'id_pembuat', 'nama_pembuat',
   'id_pimpinan_ttd', 'nama_pimpinan_ttd', 'tanggal_ttd', 'tanggal_dibuat',
-  'sifat', 'waktu', 'tempat', 'lampiran'
+  'sifat', 'waktu', 'tempat', 'lampiran', 'lampiran_file_url'
+];
+
+var DISPOSISI_STANDARD_HEADERS = [
+  'id_disposisi', 'id_surat', 'dari_id', 'dari_nama',
+  'ke_id', 'ke_nama', 'instruksi', 'tanggal', 'status_baca', 'file_url'
 ];
 
 function getSheet(sheetName) {
@@ -266,7 +271,7 @@ function getSheet(sheetName) {
   }
   if (!sheet) throw new Error('Sheet "' + sheetName + '" tidak ditemukan.');
 
-  // Pastikan kolom sheet surat selalu lengkap 21 header
+  // Pastikan kolom sheet surat selalu lengkap 22 header
   if (sheetName === SHEET_NAMES.SURAT) {
     var lastCol = sheet.getLastColumn();
     if (lastCol < SURAT_STANDARD_HEADERS.length) {
@@ -283,6 +288,23 @@ function getSheet(sheetName) {
     }
   }
 
+  // Pastikan kolom sheet disposisi selalu lengkap 10 header
+  if (sheetName === SHEET_NAMES.DISPOSISI) {
+    var lastColDisp = sheet.getLastColumn();
+    if (lastColDisp < DISPOSISI_STANDARD_HEADERS.length) {
+      var row1Disp = sheet.getRange(1, 1, 1, Math.max(1, lastColDisp)).getValues()[0];
+      for (var dIdx = 0; dIdx < DISPOSISI_STANDARD_HEADERS.length; dIdx++) {
+        if (!row1Disp[dIdx]) {
+          sheet.getRange(1, dIdx + 1).setValue(DISPOSISI_STANDARD_HEADERS[dIdx]);
+        }
+      }
+      var dispHeaderRange = sheet.getRange(1, 1, 1, DISPOSISI_STANDARD_HEADERS.length);
+      dispHeaderRange.setBackground('#1565c0');
+      dispHeaderRange.setFontColor('#ffffff');
+      dispHeaderRange.setFontWeight('bold');
+    }
+  }
+
   return sheet;
 }
 
@@ -296,6 +318,7 @@ function sheetToObjects(sheet) {
   var headers = data[0];
   var sheetName = sheet.getName();
   var isSurat = (sheetName === SHEET_NAMES.SURAT);
+  var isDisposisi = (sheetName === SHEET_NAMES.DISPOSISI);
   var objects = [];
 
   for (var i = 1; i < data.length; i++) {
@@ -308,6 +331,9 @@ function sheetToObjects(sheet) {
       var key = headers[j];
       if (!key && isSurat && j < SURAT_STANDARD_HEADERS.length) {
         key = SURAT_STANDARD_HEADERS[j];
+      }
+      if (!key && isDisposisi && j < DISPOSISI_STANDARD_HEADERS.length) {
+        key = DISPOSISI_STANDARD_HEADERS[j];
       }
       if (!key) continue;
 
@@ -328,6 +354,10 @@ function sheetToObjects(sheet) {
       if (!obj.waktu && data[i][18]) obj.waktu = String(data[i][18]);
       if (!obj.tempat && data[i][19]) obj.tempat = String(data[i][19]);
       if (!obj.lampiran && data[i][20]) obj.lampiran = String(data[i][20]);
+      if (!obj.lampiran_file_url && data[i][21]) obj.lampiran_file_url = String(data[i][21]);
+    }
+    if (isDisposisi) {
+      if (!obj.file_url && data[i][9]) obj.file_url = String(data[i][9]);
     }
 
     objects.push(obj);

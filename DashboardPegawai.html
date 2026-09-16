@@ -343,9 +343,10 @@
       <button class="modal-close" onclick="closeModal('modalBalasDisposisi')">×</button>
     </div>
     <div class="modal-body">
-      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px">
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px;margin-bottom:12px;font-size:13px">
         <strong>Instruksi:</strong> <span id="instruksiText">-</span>
       </div>
+      <div id="balasDisposisiLinks" style="margin-bottom:14px;font-size:13px"></div>
       <input type="hidden" id="balasDisposisiId"/>
       <div class="form-group">
         <label class="form-label">Balasan Anda *</label>
@@ -540,7 +541,10 @@ function renderSuratSaya(data) {
       actions += ' <button class="btn btn-primary btn-xs" onclick="doVerifikasi(\'' + s.id_surat + '\')">📤 Ajukan</button>';
     }
     if (s.file_url) {
-      actions += ' <a href="' + s.file_url + '" target="_blank" class="btn btn-success btn-xs">📄 PDF/Berkas</a>';
+      actions += ' <a href="' + s.file_url + '" target="_blank" class="btn btn-success btn-xs" title="Buka PDF Surat">📄 PDF</a>';
+    }
+    if (s.lampiran_file_url && s.lampiran_file_url !== s.file_url) {
+      actions += ' <a href="' + s.lampiran_file_url + '" target="_blank" class="btn btn-outline btn-xs" title="Buka Lampiran Berkas">📎 Lampiran</a>';
     }
     return '<tr>' +
       '<td>' + (i+1) + '</td>' +
@@ -742,26 +746,50 @@ function renderDisposisiMasuk(data) {
   var tbody = document.getElementById('disposisiMasukBody');
   if (!data.length) { tbody.innerHTML = renderEmptyRow(7, 'Tidak ada disposisi masuk'); return; }
   tbody.innerHTML = data.map(function(d, i) {
-    var fileHtml = d.file_url ? '<a href="' + d.file_url + '" target="_blank" class="btn btn-outline btn-xs">📎 File</a>' : '-';
+    var fileBtns = [];
+    if (d.file_url) {
+      fileBtns.push('<a href="' + d.file_url + '" target="_blank" class="btn btn-success btn-xs" title="Buka File Lampiran Disposisi">📎 File Disposisi</a>');
+    }
+    if (d.surat_file_url && d.surat_file_url !== d.file_url) {
+      fileBtns.push('<a href="' + d.surat_file_url + '" target="_blank" class="btn btn-primary btn-xs" title="Buka PDF Surat">📄 PDF Surat</a>');
+    }
+    if (d.surat_lampiran_url && d.surat_lampiran_url !== d.file_url && d.surat_lampiran_url !== d.surat_file_url) {
+      fileBtns.push('<a href="' + d.surat_lampiran_url + '" target="_blank" class="btn btn-outline btn-xs" title="Buka Lampiran Surat">📎 Lampiran Surat</a>');
+    }
+    var fileHtml = fileBtns.length ? '<div class="d-flex gap-4 flex-wrap">' + fileBtns.join(' ') + '</div>' : '<span style="color:#94a3b8">-</span>';
+
+    var suratInfo = d.id_surat ? ('<div style="margin-top:6px;font-size:11px;color:#2563eb;cursor:pointer" onclick="openDetailModal(\'' + d.id_surat + '\')">📄 <strong>' + escHtml(d.surat_nomor || d.id_surat) + '</strong>' + (d.surat_perihal ? (' — ' + escHtml(d.surat_perihal)) : '') + '</div>') : '';
+
     return '<tr class="' + (d.status_baca === 'belum_dibaca' ? 'unread-row' : '') + '" style="' + (d.status_baca === 'belum_dibaca' ? 'background:#eff6ff' : '') + '">' +
       '<td>' + (i+1) + '</td>' +
       '<td><strong>' + escHtml(d.dari_nama||'-') + '</strong></td>' +
-      '<td style="max-width:260px">' + escHtml(d.instruksi||'-') + '</td>' +
+      '<td style="max-width:260px">' + escHtml(d.instruksi||'-') + suratInfo + '</td>' +
       '<td>' + fileHtml + '</td>' +
       '<td>' + fmtDateTime(d.tanggal) + '</td>' +
       '<td><span class="badge ' + (d.status_baca === 'sudah_dibaca' ? 'badge-approved' : 'badge-pending') + '">' +
            (d.status_baca === 'sudah_dibaca' ? '✅ Dibaca' : '🆕 Baru') + '</span></td>' +
-      '<td><div class="d-flex gap-8">' +
-        '<button class="btn btn-primary btn-xs" onclick="openBalasDisposisi(\'' + d.id_disposisi + '\',\'' + escHtml(d.instruksi) + '\')">💬 Balas</button>' +
+      '<td><div class="d-flex gap-8 flex-wrap">' +
+        (d.id_surat ? '<button class="btn btn-outline btn-xs" onclick="openDetailModal(\'' + d.id_surat + '\')">👁️ Surat</button>' : '') +
+        '<button class="btn btn-primary btn-xs" onclick="openBalasDisposisi(\'' + d.id_disposisi + '\',\'' + escHtml(d.instruksi) + '\',\'' + (d.file_url||'') + '\',\'' + (d.id_surat||'') + '\')">💬 Balas</button>' +
         (d.status_baca === 'belum_dibaca' ? '<button class="btn btn-ghost btn-xs" onclick="doMarkRead(\'' + d.id_disposisi + '\')">✅ Baca</button>' : '') +
       '</div></td></tr>';
   }).join('');
 }
 
-function openBalasDisposisi(disposisiId, instruksi) {
+function openBalasDisposisi(disposisiId, instruksi, fileUrl, idSurat) {
   document.getElementById('balasDisposisiId').value = disposisiId;
   document.getElementById('instruksiText').textContent = instruksi;
   document.getElementById('balasText').value = '';
+  
+  var linksHtml = '';
+  if (fileUrl) {
+    linksHtml += '<div style="margin-bottom:6px"><a href="' + fileUrl + '" target="_blank" class="btn btn-outline btn-xs" style="color:#059669;border-color:#10b981">📎 Buka File Lampiran Disposisi</a></div>';
+  }
+  if (idSurat) {
+    linksHtml += '<div><button type="button" class="btn btn-ghost btn-xs" style="color:#2563eb" onclick="openDetailModal(\'' + idSurat + '\')">📄 Lihat Detail Surat Terkait (' + escHtml(idSurat) + ')</button></div>';
+  }
+  document.getElementById('balasDisposisiLinks').innerHTML = linksHtml;
+
   openModal('modalBalasDisposisi');
   // Mark as read
   callServer('markDisposisiRead', token, disposisiId).then(function() { loadDisposisiMasuk(); });
@@ -804,6 +832,8 @@ function renderArsip(data) {
   var tbody = document.getElementById('arsipBody');
   if (!data.length) { tbody.innerHTML = renderEmptyRow(7, 'Riwayat kosong'); return; }
   tbody.innerHTML = data.map(function(s, i) {
+    var pdfBtn = (s.file_url ? '<a href="' + s.file_url + '" target="_blank" class="btn btn-primary btn-xs">📄 Download PDF</a>' : '<button class="btn btn-warning btn-xs" onclick="generatePdfManual(\'' + s.id_surat + '\', this)">⚡ Buat PDF</button>');
+    var lampiranBtn = (s.lampiran_file_url && s.lampiran_file_url !== s.file_url) ? ' <a href="' + s.lampiran_file_url + '" target="_blank" class="btn btn-outline btn-xs">📎 Lampiran</a>' : '';
     return '<tr>' +
       '<td>' + (i+1) + '</td>' +
       '<td><code style="font-size:11px">' + escHtml(s.nomor_surat||'-') + '</code></td>' +
@@ -811,7 +841,7 @@ function renderArsip(data) {
       '<td>' + badgeJenis(s.jenis_surat) + '</td>' +
       '<td>' + escHtml(s.nama_pimpinan_ttd||'-') + '</td>' +
       '<td>' + fmtDateTime(s.tanggal_ttd || s.tanggal_dibuat || s.tanggal) + '</td>' +
-      '<td>' + (s.file_url ? '<a href="' + s.file_url + '" target="_blank" class="btn btn-primary btn-xs">📄 Download PDF</a>' : '<button class="btn btn-warning btn-xs" onclick="generatePdfManual(\'' + s.id_surat + '\', this)">⚡ Buat PDF</button>') + '</td></tr>';
+      '<td><div class="d-flex gap-8 flex-wrap">' + pdfBtn + lampiranBtn + '</div></td></tr>';
   }).join('');
 }
 
@@ -968,7 +998,10 @@ function openDetailModal(suratId) {
     }).join('');
 
     if (s.file_url) {
-      bodyHtml += '<div style="margin-top:14px;padding:12px;background:#e0f2fe;border-radius:8px;font-size:13px"><a href="' + s.file_url + '" target="_blank" style="color:#0369a1;font-weight:600">📎 Lihat Berkas Lampiran Terunggah</a></div>';
+      bodyHtml += '<div style="margin-top:14px;padding:12px;background:#e0f2fe;border-radius:8px;font-size:13px"><a href="' + s.file_url + '" target="_blank" style="color:#0369a1;font-weight:600">📄 Lihat / Download Dokumen Surat (PDF Resmi)</a></div>';
+    }
+    if (s.lampiran_file_url && s.lampiran_file_url !== s.file_url) {
+      bodyHtml += '<div style="margin-top:8px;padding:12px;background:#f0fdf4;border-radius:8px;font-size:13px"><a href="' + s.lampiran_file_url + '" target="_blank" style="color:#166534;font-weight:600">📎 Lihat / Download File Lampiran Terunggah</a></div>';
     }
 
     if (s.isi_surat) {
@@ -978,7 +1011,8 @@ function openDetailModal(suratId) {
     document.getElementById('detailModalPegawaiBody').innerHTML = bodyHtml;
 
     var footer = '<button class="btn btn-ghost" onclick="closeModal(\'modalDetailPegawai\')">Tutup</button>';
-    if (s.file_url) footer += '<a href="' + s.file_url + '" target="_blank" class="btn btn-primary">📄 Download PDF/Berkas</a>';
+    if (s.file_url) footer += '<a href="' + s.file_url + '" target="_blank" class="btn btn-primary">📄 Buka PDF Surat</a>';
+    if (s.lampiran_file_url && s.lampiran_file_url !== s.file_url) footer += '<a href="' + s.lampiran_file_url + '" target="_blank" class="btn btn-outline">📎 Buka Lampiran</a>';
     if (s.status === 'draft') {
       footer += '<button class="btn btn-warning" onclick="closeModal(\'modalDetailPegawai\');openEditSurat(\'' + s.id_surat + '\')">✏️ Edit Surat</button>';
       footer += '<button class="btn btn-success" onclick="closeModal(\'modalDetailPegawai\');doVerifikasi(\'' + s.id_surat + '\')">📤 Ajukan ke Pimpinan</button>';

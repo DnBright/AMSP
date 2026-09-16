@@ -147,7 +147,8 @@ function createSurat(token, data) {
     data.sifat || 'Biasa',              // sifat
     data.waktu || '',                   // waktu
     data.tempat || '',                  // tempat
-    data.lampiran || ''                 // lampiran (keterangan teks)
+    data.lampiran || '',                // lampiran (keterangan teks)
+    uploadedFileUrl                     // lampiran_file_url (kolom ke-22: URL file lampiran asli)
   ]);
 
   SpreadsheetApp.flush();
@@ -302,6 +303,7 @@ function updateSurat(token, suratId, data) {
 
       var rowNum = i + 1;
       var fileUrlIdx = headers.indexOf('file_url');
+      var lampiranFileUrlIdx = headers.indexOf('lampiran_file_url');
 
       // Upload file lampiran baru jika disertakan
       if (data.file_base64 && data.file_name) {
@@ -315,8 +317,12 @@ function updateSurat(token, suratId, data) {
           );
           var uploaded = folder.createFile(decoded);
           uploaded.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+          var newUrl = 'https://drive.google.com/file/d/' + uploaded.getId() + '/view?usp=sharing';
+          if (lampiranFileUrlIdx >= 0) {
+            sheet.getRange(rowNum, lampiranFileUrlIdx + 1).setValue(newUrl);
+          }
           if (fileUrlIdx >= 0) {
-            sheet.getRange(rowNum, fileUrlIdx + 1).setValue('https://drive.google.com/file/d/' + uploaded.getId() + '/view?usp=sharing');
+            sheet.getRange(rowNum, fileUrlIdx + 1).setValue(newUrl);
           }
         } catch (uploadErr) {
           Logger.log('Update file upload error (non-fatal): ' + uploadErr.toString());
