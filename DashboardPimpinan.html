@@ -41,7 +41,7 @@
         <span class="nav-icon">📋</span><span>Permohonan</span>
       </div>
       <div class="nav-item" data-section="arsip" onclick="switchSection('arsip')">
-        <span class="nav-icon">📁</span><span>Arsip</span>
+        <span class="nav-icon">📁</span><span>Riwayat</span>
       </div>
       <div class="nav-label">Komunikasi</div>
       <div class="nav-item" data-section="disposisi" onclick="switchSection('disposisi')">
@@ -88,7 +88,7 @@
           <div class="stat-card"><div class="stat-icon green">✅</div><div><div class="stat-label">Sudah Diproses</div><div class="stat-value" id="statDiproses">—</div></div></div>
           <div class="stat-card"><div class="stat-icon red">⏳</div><div><div class="stat-label">Belum Diproses</div><div class="stat-value" id="statBelum">—</div></div></div>
           <div class="stat-card"><div class="stat-icon purple">📤</div><div><div class="stat-label">Surat Keluar</div><div class="stat-value" id="statKeluar">—</div></div></div>
-          <div class="stat-card"><div class="stat-icon teal">📁</div><div><div class="stat-label">Total Arsip</div><div class="stat-value" id="statArsip">—</div></div></div>
+          <div class="stat-card"><div class="stat-icon teal">📁</div><div><div class="stat-label">Total Riwayat</div><div class="stat-value" id="statArsip">—</div></div></div>
         </div>
 
         <!-- Surat terbaru membutuhkan approval -->
@@ -99,7 +99,7 @@
           </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>#</th><th>No. Surat</th><th>Perihal</th><th>Dari</th><th>Jenis</th><th>Tanggal</th><th>Status</th><th>Aksi</th></tr></thead>
+              <thead><tr><th>#</th><th>No. Surat</th><th>Perihal</th><th>Dari</th><th>Jenis</th><th>Tanggal & Jam</th><th>Status</th><th>Aksi</th></tr></thead>
               <tbody id="pendingApprovalBody">
                 <tr><td colspan="8" style="text-align:center;padding:30px"><div class="spinner"></div></td></tr>
               </tbody>
@@ -121,7 +121,7 @@
           </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>#</th><th>No. Surat</th><th>Perihal</th><th>Pengirim</th><th>Tanggal</th><th>Status</th><th>Aksi</th></tr></thead>
+              <thead><tr><th>#</th><th>No. Surat</th><th>Perihal</th><th>Pengirim</th><th>Tanggal & Jam</th><th>Status</th><th>Aksi</th></tr></thead>
               <tbody id="masukBody"><tr><td colspan="7" style="text-align:center;padding:30px"><div class="spinner"></div></td></tr></tbody>
             </table>
           </div>
@@ -141,27 +141,27 @@
           </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>#</th><th>No. Surat</th><th>Perihal</th><th>Pengaju</th><th>Tanggal</th><th>Status</th><th>Aksi</th></tr></thead>
+              <thead><tr><th>#</th><th>No. Surat</th><th>Perihal</th><th>Pengaju</th><th>Tanggal & Jam</th><th>Status</th><th>Aksi</th></tr></thead>
               <tbody id="permohonanBody"><tr><td colspan="7" style="text-align:center;padding:30px"><div class="spinner"></div></td></tr></tbody>
             </table>
           </div>
         </div>
       </div>
 
-      <!-- ── ARSIP ── -->
+      <!-- ── RIWAYAT ── -->
       <div id="section-arsip" class="section hidden">
-        <div class="page-header"><h1>📁 Arsip Surat</h1><p>Surat yang telah disetujui dan diarsipkan.</p></div>
+        <div class="page-header"><h1>📁 Riwayat Surat</h1><p>Surat yang telah disetujui dan selesai.</p></div>
         <div class="card">
           <div class="card-header">
-            <span class="card-title">Arsip</span>
+            <span class="card-title">Riwayat Surat</span>
             <div class="search-wrap">
               <span class="search-icon">🔍</span>
-              <input type="text" id="arsipSearch" placeholder="Cari arsip..." oninput="filterArsip(this.value)"/>
+              <input type="text" id="arsipSearch" placeholder="Cari riwayat..." oninput="filterArsip(this.value)"/>
             </div>
           </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>#</th><th>No. Surat</th><th>Perihal</th><th>Jenis</th><th>TTD Oleh</th><th>Tgl TTD</th><th>Aksi</th></tr></thead>
+              <thead><tr><th>#</th><th>No. Surat</th><th>Perihal</th><th>Jenis</th><th>TTD Oleh</th><th>Tgl TTD & Jam</th><th>Aksi</th></tr></thead>
               <tbody id="arsipBody"><tr><td colspan="7" style="text-align:center;padding:30px"><div class="spinner"></div></td></tr></tbody>
             </table>
           </div>
@@ -184,7 +184,7 @@
           </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>#</th><th>Perihal Surat</th><th>Kepada</th><th>Instruksi</th><th>Tanggal</th><th>Status</th><th>File</th></tr></thead>
+              <thead><tr><th>#</th><th>Perihal Surat</th><th>Kepada</th><th>Instruksi</th><th>Tanggal & Jam</th><th>Status</th><th>File</th></tr></thead>
               <tbody id="disposisiBody"><tr><td colspan="7" style="text-align:center;padding:30px"><div class="spinner"></div></td></tr></tbody>
             </table>
           </div>
@@ -202,9 +202,9 @@
               <div class="form-group">
                 <label class="form-label">Jenis Surat *</label>
                 <select class="form-control" id="psJenis">
-                  <option value="">-- Pilih Jenis --</option>
-                  <option value="masuk">Surat Masuk</option>
                   <option value="keluar">Surat Keluar</option>
+                  <option value="perintah">Surat Perintah (Tugas)</option>
+                  <option value="masuk">Surat Masuk</option>
                   <option value="permohonan">Surat Permohonan</option>
                 </select>
               </div>
@@ -224,8 +224,8 @@
                 <input type="date" class="form-control" id="psTanggal"/>
               </div>
               <div class="form-group">
-                <label class="form-label">Waktu Pelaksanaan</label>
-                <input type="time" class="form-control" id="psWaktu" placeholder="07:00"/>
+                <label class="form-label">Waktu Pelaksanaan (opsional)</label>
+                <input type="text" class="form-control" id="psWaktu" placeholder="Contoh: 09:00 WIT s.d. Selesai"/>
               </div>
             </div>
             <div class="form-group">
@@ -423,7 +423,7 @@ function switchSection(name) {
     dashboard: 'Ringkasan',
     masuk: 'Surat Masuk',
     permohonan: 'Surat Permohonan',
-    arsip: 'Arsip Surat',
+    arsip: 'Riwayat Surat',
     disposisi: 'Disposisi',
     'buat-surat': 'Buat Surat Keluar / Perintah',
     akun: 'Pengaturan Akun'
@@ -470,7 +470,7 @@ function renderPendingApproval(data) {
       '<td>' + escHtml(s.perihal) + '</td>' +
       '<td>' + escHtml(s.nama_pembuat||s.pengirim||'-') + '</td>' +
       '<td>' + badgeJenis(s.jenis_surat) + '</td>' +
-      '<td>' + fmtDate(s.tanggal) + '</td>' +
+      '<td>' + fmtDateTime(s.tanggal_dibuat || s.tanggal) + '</td>' +
       '<td>' + badgeStatus(s.status) + '</td>' +
       '<td><div class="d-flex gap-8">' +
         '<button class="btn btn-outline btn-xs" onclick="openDetail(\'' + s.id_surat + '\')">👁️ Detail</button>' +
@@ -516,7 +516,7 @@ function renderSuratTable(bodyId, data) {
       '<td><code style="font-size:11px">' + escHtml(s.nomor_surat||'-') + '</code></td>' +
       '<td>' + escHtml(s.perihal) + '</td>' +
       '<td>' + escHtml(s.pengirim||s.nama_pembuat||'-') + '</td>' +
-      '<td>' + fmtDate(s.tanggal) + '</td>' +
+      '<td>' + fmtDateTime(s.tanggal_dibuat || s.tanggal) + '</td>' +
       '<td>' + badgeStatus(s.status) + '</td>' +
       '<td><div class="d-flex gap-8">' +
         '<button class="btn btn-outline btn-xs" onclick="openDetail(\'' + s.id_surat + '\')">👁️ Detail</button>' +
@@ -547,7 +547,7 @@ function loadArsip() {
 
 function renderArsip(data) {
   var tbody = document.getElementById('arsipBody');
-  if (!data.length) { tbody.innerHTML = renderEmptyRow(7, 'Arsip kosong'); return; }
+  if (!data.length) { tbody.innerHTML = renderEmptyRow(7, 'Riwayat kosong'); return; }
   tbody.innerHTML = data.map(function(s, i) {
     return '<tr>' +
       '<td>' + (i+1) + '</td>' +
@@ -555,7 +555,7 @@ function renderArsip(data) {
       '<td>' + escHtml(s.perihal) + '</td>' +
       '<td>' + badgeJenis(s.jenis_surat) + '</td>' +
       '<td>' + escHtml(s.nama_pimpinan_ttd||'-') + '</td>' +
-      '<td>' + fmtDate(s.tanggal_ttd) + '</td>' +
+      '<td>' + fmtDateTime(s.tanggal_ttd || s.tanggal_dibuat || s.tanggal) + '</td>' +
       '<td><div class="d-flex gap-8">' +
         (s.file_url ? '<a href="' + s.file_url + '" target="_blank" class="btn btn-primary btn-xs">📄 Download PDF</a>' : '<button class="btn btn-warning btn-xs" onclick="generatePdfManual(\'' + s.id_surat + '\', this)">⚡ Buat PDF</button>') +
       '</div></td></tr>';
@@ -616,7 +616,7 @@ function openDetail(suratId) {
       ['Pengirim', s.pengirim||'-'],
       ['Penerima', s.penerima||'-'],
       ['Tembusan', s.tembusan||'-'],
-      ['Tanggal', s.tanggal ? fmtDate(s.tanggal) : '-'],
+      ['Tanggal Dibuat', fmtDateTime(s.tanggal_dibuat || s.tanggal)],
       ['Waktu Pelaksanaan', s.waktu||'-'],
       ['Tempat Pelaksanaan', s.tempat||'-'],
       ['Lampiran Keterangan', s.lampiran||'-'],
@@ -766,6 +766,7 @@ async function doKirimDisposisi() {
       var b64 = await readFileAsBase64(fileInput.files[0]);
       payload.file_base64 = b64;
       payload.file_name = fileInput.files[0].name;
+      payload.file_type = fileInput.files[0].type || 'application/octet-stream';
     } catch(err) {
       hideLoading();
       btn.disabled = false; btn.innerHTML = '📤 Kirim Disposisi';
@@ -795,46 +796,91 @@ async function doKirimDisposisi() {
 
 // ── BUAT SURAT (PIMPINAN) ────────────────────────────────
 function resetPimpinanSuratForm() {
-  document.getElementById('psJenisSurat').value = 'perintah';
-  document.getElementById('psSifat').value = 'Biasa';
-  document.getElementById('psPerihal').value = '';
-  document.getElementById('psPenerima').value = '';
-  document.getElementById('psTembusan').value = '';
-  document.getElementById('psTanggal').value = getLocalDateString();
-  document.getElementById('psWaktu').value = '';
-  document.getElementById('psTempat').value = '';
-  document.getElementById('psLampiran').value = '';
-  document.getElementById('psIsi').value = '';
+  var elJenis = document.getElementById('psJenis');
+  if (elJenis) elJenis.value = 'keluar';
+  var elSifat = document.getElementById('psSifat');
+  if (elSifat) elSifat.value = 'Biasa';
+  var elPerihal = document.getElementById('psPerihal');
+  if (elPerihal) elPerihal.value = '';
+  var elPengirim = document.getElementById('psPengirim');
+  if (elPengirim) elPengirim.value = userData ? userData.nama : '';
+  var elPenerima = document.getElementById('psPenerima');
+  if (elPenerima) elPenerima.value = '';
+  var elTembusan = document.getElementById('psTembusan');
+  if (elTembusan) elTembusan.value = '';
+  var elTanggal = document.getElementById('psTanggal');
+  if (elTanggal) elTanggal.value = getLocalDateString();
+  var elWaktu = document.getElementById('psWaktu');
+  if (elWaktu) elWaktu.value = '';
+  var elTempat = document.getElementById('psTempat');
+  if (elTempat) elTempat.value = '';
+  var elLampiran = document.getElementById('psLampiran');
+  if (elLampiran) elLampiran.value = '';
+  var elIsi = document.getElementById('psIsiSurat');
+  if (elIsi) elIsi.value = '';
   var f = document.getElementById('psFile');
   if (f) f.value = '';
-  document.getElementById('psFileInfo').textContent = '';
+  var fInfo = document.getElementById('psFileInfo');
+  if (fInfo) fInfo.textContent = '';
+  var errEl = document.getElementById('pimpinanSuratError');
+  if (errEl) errEl.style.display = 'none';
 }
 
 async function doPimpinanCreateSurat(targetStatus) {
-  var perihal = document.getElementById('psPerihal').value.trim();
-  var isi = document.getElementById('psIsi').value.trim();
-  var penerima = document.getElementById('psPenerima').value.trim();
+  var errEl = document.getElementById('pimpinanSuratError');
+  if (errEl) errEl.style.display = 'none';
 
-  if (!perihal || !isi) {
-    showToast('Perihal dan Isi Surat wajib diisi.', 'warning');
+  var jenisEl    = document.getElementById('psJenis');
+  var perihalEl  = document.getElementById('psPerihal');
+  var isiEl      = document.getElementById('psIsiSurat');
+  var penerimaEl = document.getElementById('psPenerima');
+  var pengirimEl = document.getElementById('psPengirim');
+  var sifatEl    = document.getElementById('psSifat');
+  var tanggalEl  = document.getElementById('psTanggal');
+  var waktuEl    = document.getElementById('psWaktu');
+  var tempatEl   = document.getElementById('psTempat');
+  var lampiranEl = document.getElementById('psLampiran');
+  var tembusanEl = document.getElementById('psTembusan');
+
+  var jenis    = jenisEl ? jenisEl.value : 'keluar';
+  var perihal  = perihalEl ? perihalEl.value.trim() : '';
+  var isi      = isiEl ? isiEl.value.trim() : '';
+  var penerima = penerimaEl ? penerimaEl.value.trim() : '';
+  var pengirim = pengirimEl ? pengirimEl.value.trim() : (userData ? userData.nama : '');
+  var sifat    = sifatEl ? sifatEl.value : 'Biasa';
+  var tanggal  = (tanggalEl && tanggalEl.value) ? tanggalEl.value : getLocalDateString();
+  var waktu    = waktuEl ? waktuEl.value.trim() : '';
+  var tempat   = tempatEl ? tempatEl.value.trim() : '';
+  var lampiran = lampiranEl ? lampiranEl.value.trim() : '';
+  var tembusan = tembusanEl ? tembusanEl.value.trim() : '';
+
+  if (!jenis) {
+    if (errEl) { errEl.textContent = 'Jenis surat wajib dipilih.'; errEl.style.display = 'block'; }
+    showToast('Jenis surat wajib dipilih.', 'warning');
+    return;
+  }
+  if (!perihal) {
+    if (errEl) { errEl.textContent = 'Perihal surat wajib diisi.'; errEl.style.display = 'block'; }
+    showToast('Perihal surat wajib diisi.', 'warning');
     return;
   }
 
   var btnDraft = document.getElementById('btnPsDraft');
   var btnSign = document.getElementById('btnPsSign');
-  btnDraft.disabled = true;
-  btnSign.disabled = true;
+  if (btnDraft) btnDraft.disabled = true;
+  if (btnSign) btnSign.disabled = true;
 
   var payload = {
-    jenis_surat: document.getElementById('psJenisSurat').value,
-    sifat: document.getElementById('psSifat').value,
+    jenis_surat: jenis,
+    sifat: sifat,
     perihal: perihal,
+    pengirim: pengirim,
     penerima: penerima,
-    tembusan: document.getElementById('psTembusan').value.trim(),
-    tanggal: document.getElementById('psTanggal').value,
-    waktu: document.getElementById('psWaktu').value.trim(),
-    tempat: document.getElementById('psTempat').value.trim(),
-    lampiran: document.getElementById('psLampiran').value.trim(),
+    tembusan: tembusan,
+    tanggal: tanggal,
+    waktu: waktu,
+    tempat: tempat,
+    lampiran: lampiran,
     isi_surat: isi,
     status: targetStatus
   };
@@ -846,10 +892,12 @@ async function doPimpinanCreateSurat(targetStatus) {
       var b64 = await readFileAsBase64(fileInput.files[0]);
       payload.file_base64 = b64;
       payload.file_name = fileInput.files[0].name;
+      payload.file_type = fileInput.files[0].type || 'application/octet-stream';
     } catch(err) {
       hideLoading();
-      btnDraft.disabled = false;
-      btnSign.disabled = false;
+      if (btnDraft) btnDraft.disabled = false;
+      if (btnSign) btnSign.disabled = false;
+      if (errEl) { errEl.textContent = 'Gagal membaca file: ' + err.message; errEl.style.display = 'block'; }
       showToast('Gagal membaca file: ' + err.message, 'error');
       return;
     }
@@ -859,8 +907,8 @@ async function doPimpinanCreateSurat(targetStatus) {
 
   callServer('createSurat', token, payload).then(function(res) {
     hideLoading();
-    btnDraft.disabled = false;
-    btnSign.disabled = false;
+    if (btnDraft) btnDraft.disabled = false;
+    if (btnSign) btnSign.disabled = false;
     if (res.success) {
       showToast(targetStatus === 'disetujui' ? 'Surat berhasil dibuat dan ditandatangani!' : 'Draft surat berhasil disimpan!', 'success');
       resetPimpinanSuratForm();
@@ -868,14 +916,16 @@ async function doPimpinanCreateSurat(targetStatus) {
       loadSuratMasuk();
       loadPermohonan();
       loadArsip();
-      switchSection('arsip');
+      switchSection(targetStatus === 'disetujui' ? 'arsip' : 'dashboard');
     } else {
+      if (errEl) { errEl.textContent = res.message; errEl.style.display = 'block'; }
       showToast(res.message, 'error');
     }
   }).catch(function(err) {
     hideLoading();
-    btnDraft.disabled = false;
-    btnSign.disabled = false;
+    if (btnDraft) btnDraft.disabled = false;
+    if (btnSign) btnSign.disabled = false;
+    if (errEl) { errEl.textContent = 'Terjadi kesalahan: ' + (err.message || err); errEl.style.display = 'block'; }
     showToast('Terjadi kesalahan: ' + (err.message || err), 'error');
   });
 }

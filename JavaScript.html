@@ -150,11 +150,7 @@ function getLocalDateString(d) {
 
 function fmtDate(val) {
   if (!val) return '-';
-  try {
-    var d = parseDateSafe(val);
-    if (!d) return String(val);
-    return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
-  } catch(e) { return String(val); }
+  return fmtDateTime(val);
 }
 
 function fmtDateTime(val) {
@@ -165,7 +161,7 @@ function fmtDateTime(val) {
     var datePart = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
     var hours = String(d.getHours()).padStart(2, '0');
     var minutes = String(d.getMinutes()).padStart(2, '0');
-    return datePart + ', ' + hours + ':' + minutes;
+    return datePart + ', ' + hours + ':' + minutes + ' WIT';
   } catch(e) { return String(val); }
 }
 
@@ -176,7 +172,7 @@ function fmtTime(val) {
     if (!d) return String(val);
     var hours = String(d.getHours()).padStart(2, '0');
     var minutes = String(d.getMinutes()).padStart(2, '0');
-    return hours + ':' + minutes;
+    return hours + ':' + minutes + ' WIT';
   } catch(e) { return String(val); }
 }
 
@@ -359,6 +355,35 @@ function renderEmptyRow(colspan, msg) {
   return '<tr><td colspan="' + colspan + '" style="text-align:center;padding:40px;color:var(--text-muted)">' +
          '<div style="font-size:32px;margin-bottom:8px">📄</div>' +
          (msg || 'Tidak ada data') + '</td></tr>';
+}
+
+// ─── FILE UPLOAD HELPERS ──────────────────────────────────
+function previewFile(inputId, infoId) {
+  var input = document.getElementById(inputId);
+  var info = document.getElementById(infoId);
+  if (!input || !info) return;
+  if (input.files && input.files[0]) {
+    var file = input.files[0];
+    var sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+    if (file.size > 10 * 1024 * 1024) {
+      info.innerHTML = '<span style="color:#ef4444;font-weight:600">⚠️ Ukuran file (' + sizeMB + ' MB) terlalu besar. Maksimum 10MB.</span>';
+      input.value = '';
+      return;
+    }
+    info.innerHTML = '<span style="color:#059669;font-weight:600">📎 Terpilih: ' + escHtml(file.name) + ' (' + sizeMB + ' MB)</span>';
+  } else {
+    info.textContent = '';
+  }
+}
+
+function readFileAsBase64(file) {
+  return new Promise(function(resolve, reject) {
+    if (!file) { resolve(''); return; }
+    var reader = new FileReader();
+    reader.onload = function(e) { resolve(e.target.result); };
+    reader.onerror = function(err) { reject(err); };
+    reader.readAsDataURL(file);
+  });
 }
 
 // ─── PERIODIC NOTIF REFRESH ───────────────────────────────

@@ -96,7 +96,7 @@
                   <th>Username</th>
                   <th>Role</th>
                   <th>Status</th>
-                  <th>Tgl Daftar</th>
+                  <th>Tgl Daftar & Jam</th>
                   <th>Aksi</th>
                 </tr>
               </thead>
@@ -122,7 +122,7 @@
           <div class="table-wrap">
             <table>
               <thead>
-                <tr><th>#</th><th>Nama</th><th>Username</th><th>Role</th><th>Tgl Daftar</th><th>Aksi</th></tr>
+                <tr><th>#</th><th>Nama</th><th>Username</th><th>Role</th><th>Tgl Daftar & Jam</th><th>Aksi</th></tr>
               </thead>
               <tbody id="pendingTableBody">
                 <tr><td colspan="6" style="text-align:center;padding:40px"><div class="spinner"></div></td></tr>
@@ -149,7 +149,7 @@
           <div class="table-wrap">
             <table>
               <thead>
-                <tr><th>#</th><th>No. Surat</th><th>Perihal</th><th>Jenis</th><th>Pembuat</th><th>Tanggal</th><th>Status</th><th>Aksi</th></tr>
+                <tr><th>#</th><th>No. Surat</th><th>Perihal</th><th>Jenis</th><th>Pembuat</th><th>Tanggal & Jam</th><th>Status</th><th>Aksi</th></tr>
               </thead>
               <tbody id="suratAdminBody">
                 <tr><td colspan="8" style="text-align:center;padding:40px"><div class="spinner"></div></td></tr>
@@ -418,7 +418,7 @@ function renderUserTable(data) {
       '<td>' + escHtml(u.username) + '</td>' +
       '<td>' + badgeRole(u.role) + '</td>' +
       '<td>' + badgeApproval(u.status_approval) + '</td>' +
-      '<td>' + fmtDate(u.tanggal_daftar) + '</td>' +
+      '<td>' + fmtDateTime(u.tanggal_daftar) + '</td>' +
       '<td>' +
         '<div class="d-flex gap-8">' +
         '<button class="btn btn-outline btn-xs" onclick="openEditUser(' + JSON.stringify(u).replace(/"/g,'&quot;') + ')">✏️ Edit</button>' +
@@ -460,7 +460,7 @@ function loadPendingUsers() {
         '<td><strong>' + escHtml(u.nama) + '</strong></td>' +
         '<td>' + escHtml(u.username) + '</td>' +
         '<td>' + badgeRole(u.role) + '</td>' +
-        '<td>' + fmtDate(u.tanggal_daftar) + '</td>' +
+        '<td>' + fmtDateTime(u.tanggal_daftar) + '</td>' +
         '<td><div class="d-flex gap-8">' +
           '<button class="btn btn-success btn-xs" onclick="doApprove(\'' + u.id + '\')">✅ Setujui</button>' +
           '<button class="btn btn-danger btn-xs" onclick="doReject(\'' + u.id + '\')">❌ Tolak</button>' +
@@ -581,7 +581,7 @@ function renderSuratAdmin(data) {
       '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escHtml(s.perihal) + '</td>' +
       '<td>' + badgeJenis(s.jenis_surat) + '</td>' +
       '<td>' + escHtml(s.nama_pembuat||'-') + '</td>' +
-      '<td>' + fmtDate(s.tanggal) + '</td>' +
+      '<td>' + fmtDateTime(s.tanggal_dibuat || s.tanggal) + '</td>' +
       '<td>' + badgeStatus(s.status) + '</td>' +
       '<td>' +
         (s.file_url ? '<a href="' + s.file_url + '" target="_blank" class="btn btn-outline btn-xs">📄 PDF</a> ' : '') +

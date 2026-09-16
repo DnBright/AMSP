@@ -138,18 +138,19 @@ function initializeSheets() {
     'status_approval', 'tanggal_daftar', 'email'
   ]);
 
-  // ── Sheet Surat ──
+  // ── Sheet Surat (21 Kolom Lengkap) ──
   setupSheet_(ss, SHEET_NAMES.SURAT, [
     'id_surat', 'jenis_surat', 'nomor_surat', 'pengirim', 'penerima',
     'tembusan', 'perihal', 'isi_surat', 'tanggal', 'status',
     'file_url', 'id_pembuat', 'nama_pembuat',
-    'id_pimpinan_ttd', 'nama_pimpinan_ttd', 'tanggal_ttd', 'tanggal_dibuat'
+    'id_pimpinan_ttd', 'nama_pimpinan_ttd', 'tanggal_ttd', 'tanggal_dibuat',
+    'sifat', 'waktu', 'tempat', 'lampiran'
   ]);
 
   // ── Sheet Disposisi ──
   setupSheet_(ss, SHEET_NAMES.DISPOSISI, [
     'id_disposisi', 'id_surat', 'dari_id', 'dari_nama',
-    'ke_id', 'ke_nama', 'instruksi', 'tanggal', 'status_baca'
+    'ke_id', 'ke_nama', 'instruksi', 'tanggal', 'status_baca', 'file_url'
   ]);
 
   // ── Sheet Notifikasi ──
@@ -170,9 +171,8 @@ function setupSheet_(ss, sheetName, headers) {
     sheet = ss.insertSheet(sheetName);
   }
 
-  // Set header hanya jika belum ada atau baris 1 kosong
-  var firstCell = sheet.getRange(1, 1).getValue();
-  if (!firstCell) {
+  var lastCol = sheet.getLastColumn();
+  if (lastCol === 0 || !sheet.getRange(1, 1).getValue()) {
     sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
     var headerRange = sheet.getRange(1, 1, 1, headers.length);
     headerRange.setBackground('#1565c0');
@@ -180,10 +180,26 @@ function setupSheet_(ss, sheetName, headers) {
     headerRange.setFontWeight('bold');
     headerRange.setHorizontalAlignment('center');
     sheet.setFrozenRows(1);
-
-    // Auto-resize kolom
     for (var i = 1; i <= headers.length; i++) {
       sheet.setColumnWidth(i, 150);
+    }
+  } else {
+    // Sinkronisasi otomatis jika ada kolom header yang belum terdaftar
+    var curRow = sheet.getRange(1, 1, 1, Math.max(lastCol, headers.length)).getValues()[0];
+    var updated = false;
+    for (var h = 0; h < headers.length; h++) {
+      if (!curRow[h]) {
+        sheet.getRange(1, h + 1).setValue(headers[h]);
+        updated = true;
+      }
+    }
+    if (updated) {
+      var fullHeaderRange = sheet.getRange(1, 1, 1, headers.length);
+      fullHeaderRange.setBackground('#1565c0');
+      fullHeaderRange.setFontColor('#ffffff');
+      fullHeaderRange.setFontWeight('bold');
+      fullHeaderRange.setHorizontalAlignment('center');
+      SpreadsheetApp.flush();
     }
   }
   return sheet;
@@ -232,6 +248,14 @@ function getSpreadsheet_() {
   return ss;
 }
 
+var SURAT_STANDARD_HEADERS = [
+  'id_surat', 'jenis_surat', 'nomor_surat', 'pengirim', 'penerima',
+  'tembusan', 'perihal', 'isi_surat', 'tanggal', 'status',
+  'file_url', 'id_pembuat', 'nama_pembuat',
+  'id_pimpinan_ttd', 'nama_pimpinan_ttd', 'tanggal_ttd', 'tanggal_dibuat',
+  'sifat', 'waktu', 'tempat', 'lampiran'
+];
+
 function getSheet(sheetName) {
   var ss = getSpreadsheet_();
   var sheet = ss.getSheetByName(sheetName);
@@ -241,6 +265,24 @@ function getSheet(sheetName) {
     sheet = ss.getSheetByName(sheetName);
   }
   if (!sheet) throw new Error('Sheet "' + sheetName + '" tidak ditemukan.');
+
+  // Pastikan kolom sheet surat selalu lengkap 21 header
+  if (sheetName === SHEET_NAMES.SURAT) {
+    var lastCol = sheet.getLastColumn();
+    if (lastCol < SURAT_STANDARD_HEADERS.length) {
+      var row1 = sheet.getRange(1, 1, 1, Math.max(1, lastCol)).getValues()[0];
+      for (var idx = 0; idx < SURAT_STANDARD_HEADERS.length; idx++) {
+        if (!row1[idx]) {
+          sheet.getRange(1, idx + 1).setValue(SURAT_STANDARD_HEADERS[idx]);
+        }
+      }
+      var headerRange = sheet.getRange(1, 1, 1, SURAT_STANDARD_HEADERS.length);
+      headerRange.setBackground('#1565c0');
+      headerRange.setFontColor('#ffffff');
+      headerRange.setFontWeight('bold');
+    }
+  }
+
   return sheet;
 }
 
@@ -252,12 +294,23 @@ function sheetToObjects(sheet) {
   if (data.length <= 1) return [];
 
   var headers = data[0];
+  var sheetName = sheet.getName();
+  var isSurat = (sheetName === SHEET_NAMES.SURAT);
   var objects = [];
+
   for (var i = 1; i < data.length; i++) {
     // Skip baris kosong
     if (!data[i][0]) continue;
     var obj = {};
-    for (var j = 0; j < headers.length; j++) {
+    var maxCols = Math.max(headers.length, data[i].length);
+
+    for (var j = 0; j < maxCols; j++) {
+      var key = headers[j];
+      if (!key && isSurat && j < SURAT_STANDARD_HEADERS.length) {
+        key = SURAT_STANDARD_HEADERS[j];
+      }
+      if (!key) continue;
+
       var val = data[i][j];
       if (val instanceof Date) {
         val = val.toISOString();
@@ -266,8 +319,17 @@ function sheetToObjects(sheet) {
       } else {
         val = String(val);
       }
-      obj[headers[j]] = val;
+      obj[key] = val;
     }
+
+    // Pastikan data kolom tambahan selalu terpetakan jika ada nilainya
+    if (isSurat) {
+      if (!obj.sifat && data[i][17]) obj.sifat = String(data[i][17]);
+      if (!obj.waktu && data[i][18]) obj.waktu = String(data[i][18]);
+      if (!obj.tempat && data[i][19]) obj.tempat = String(data[i][19]);
+      if (!obj.lampiran && data[i][20]) obj.lampiran = String(data[i][20]);
+    }
+
     objects.push(obj);
   }
   return objects;

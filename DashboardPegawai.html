@@ -41,9 +41,9 @@
         <span class="nav-icon">📨</span><span>Disposisi Masuk</span>
         <span class="nav-badge hidden" id="disposisiBadge">0</span>
       </div>
-      <div class="nav-label">Arsip</div>
+      <div class="nav-label">Riwayat</div>
       <div class="nav-item" data-section="arsip" onclick="switchSection('arsip')">
-        <span class="nav-icon">📁</span><span>Arsip Surat</span>
+        <span class="nav-icon">📁</span><span>Riwayat Surat</span>
       </div>
       <div class="nav-label">Pengaturan</div>
       <div class="nav-item" data-section="akun" onclick="switchSection('akun')">
@@ -95,7 +95,7 @@
           </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>#</th><th>No. Surat</th><th>Perihal</th><th>Jenis</th><th>Tanggal</th><th>Status</th><th>Aksi</th></tr></thead>
+              <thead><tr><th>#</th><th>No. Surat</th><th>Perihal</th><th>Jenis</th><th>Tanggal & Jam</th><th>Status</th><th>Aksi</th></tr></thead>
               <tbody id="suratSayaBody">
                 <tr><td colspan="7" style="text-align:center;padding:30px"><div class="spinner"></div></td></tr>
               </tbody>
@@ -267,7 +267,7 @@
           </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>#</th><th>Dari</th><th>Instruksi</th><th>Lampiran</th><th>Tanggal</th><th>Status</th><th>Aksi</th></tr></thead>
+              <thead><tr><th>#</th><th>Dari</th><th>Instruksi</th><th>Lampiran</th><th>Tanggal & Jam</th><th>Status</th><th>Aksi</th></tr></thead>
               <tbody id="disposisiMasukBody">
                 <tr><td colspan="7" style="text-align:center;padding:30px"><div class="spinner"></div></td></tr>
               </tbody>
@@ -276,20 +276,20 @@
         </div>
       </div>
 
-      <!-- ── ARSIP ── -->
+      <!-- ── RIWAYAT ── -->
       <div id="section-arsip" class="section hidden">
-        <div class="page-header"><h1>📁 Arsip Surat</h1><p>Surat yang telah disetujui.</p></div>
+        <div class="page-header"><h1>📁 Riwayat Surat</h1><p>Surat yang telah disetujui.</p></div>
         <div class="card">
           <div class="card-header">
-            <span class="card-title">Arsip Surat Saya</span>
+            <span class="card-title">Riwayat Surat Saya</span>
             <div class="search-wrap">
               <span class="search-icon">🔍</span>
-              <input type="text" placeholder="Cari arsip..." oninput="filterArsip(this.value)"/>
+              <input type="text" placeholder="Cari riwayat..." oninput="filterArsip(this.value)"/>
             </div>
           </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>#</th><th>No. Surat</th><th>Perihal</th><th>Jenis</th><th>TTD Oleh</th><th>Tgl Disetujui</th><th>Aksi</th></tr></thead>
+              <thead><tr><th>#</th><th>No. Surat</th><th>Perihal</th><th>Jenis</th><th>TTD Oleh</th><th>Tgl Disetujui & Jam</th><th>Aksi</th></tr></thead>
               <tbody id="arsipBody">
                 <tr><td colspan="7" style="text-align:center;padding:30px"><div class="spinner"></div></td></tr>
               </tbody>
@@ -491,7 +491,7 @@ function switchSection(name) {
     'buat-surat': 'Buat Surat Baru',
     'permohonan': 'Buat Permohonan',
     'disposisi': 'Disposisi Masuk',
-    'arsip': 'Arsip Surat',
+    'arsip': 'Riwayat Surat',
     'akun': 'Pengaturan Akun'
   };
   document.getElementById('topnavTitle').textContent = titles[name] || name;
@@ -547,7 +547,7 @@ function renderSuratSaya(data) {
       '<td><code style="font-size:11px">' + escHtml(s.nomor_surat||'-') + '</code></td>' +
       '<td style="max-width:200px">' + escHtml(s.perihal) + '</td>' +
       '<td>' + badgeJenis(s.jenis_surat) + '</td>' +
-      '<td>' + fmtDate(s.tanggal) + '</td>' +
+      '<td>' + fmtDateTime(s.tanggal_dibuat || s.tanggal) + '</td>' +
       '<td>' + badgeStatus(s.status) + '</td>' +
       '<td><div class="d-flex gap-8 flex-wrap">' + actions + '</div></td></tr>';
   }).join('');
@@ -599,6 +599,7 @@ async function doCreateSurat(statusAction) {
       var b64 = await readFileAsBase64(fileInput.files[0]);
       payload.file_base64 = b64;
       payload.file_name = fileInput.files[0].name;
+      payload.file_type = fileInput.files[0].type || 'application/octet-stream';
     } catch(err) {
       hideLoading();
       btn.disabled = false;
@@ -695,6 +696,7 @@ async function doCreatePermohonan() {
       var b64 = await readFileAsBase64(fileInput.files[0]);
       payload.file_base64 = b64;
       payload.file_name = fileInput.files[0].name;
+      payload.file_type = fileInput.files[0].type || 'application/octet-stream';
     } catch(err) {
       hideLoading();
       btn.disabled = false; btn.innerHTML = '📩 Kirim Permohonan';
@@ -800,7 +802,7 @@ function loadArsip() {
 
 function renderArsip(data) {
   var tbody = document.getElementById('arsipBody');
-  if (!data.length) { tbody.innerHTML = renderEmptyRow(7, 'Arsip kosong'); return; }
+  if (!data.length) { tbody.innerHTML = renderEmptyRow(7, 'Riwayat kosong'); return; }
   tbody.innerHTML = data.map(function(s, i) {
     return '<tr>' +
       '<td>' + (i+1) + '</td>' +
@@ -808,7 +810,7 @@ function renderArsip(data) {
       '<td>' + escHtml(s.perihal) + '</td>' +
       '<td>' + badgeJenis(s.jenis_surat) + '</td>' +
       '<td>' + escHtml(s.nama_pimpinan_ttd||'-') + '</td>' +
-      '<td>' + fmtDate(s.tanggal_ttd) + '</td>' +
+      '<td>' + fmtDateTime(s.tanggal_ttd || s.tanggal_dibuat || s.tanggal) + '</td>' +
       '<td>' + (s.file_url ? '<a href="' + s.file_url + '" target="_blank" class="btn btn-primary btn-xs">📄 Download PDF</a>' : '<button class="btn btn-warning btn-xs" onclick="generatePdfManual(\'' + s.id_surat + '\', this)">⚡ Buat PDF</button>') + '</td></tr>';
   }).join('');
 }
@@ -898,6 +900,7 @@ async function doEditSurat(nextStatus) {
       showLoading('Mengupload berkas baru...');
       data.file_base64 = await readFileAsBase64(fileInput.files[0]);
       data.file_name = fileInput.files[0].name;
+      data.file_type = fileInput.files[0].type || 'application/octet-stream';
     } catch(err) {
       hideLoading();
       btn.disabled = false;
@@ -948,7 +951,7 @@ function openDetailModal(suratId) {
       ['Pengirim', s.pengirim||'-'],
       ['Penerima', s.penerima||'-'],
       ['Tembusan', s.tembusan||'-'],
-      ['Tanggal', s.tanggal ? fmtDate(s.tanggal) : '-'],
+      ['Tanggal Dibuat', fmtDateTime(s.tanggal_dibuat || s.tanggal)],
       ['Waktu Pelaksanaan', s.waktu||'-'],
       ['Tempat Pelaksanaan', s.tempat||'-'],
       ['Lampiran', s.lampiran||'-'],

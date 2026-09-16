@@ -85,14 +85,19 @@ function generateSuratPDF(suratId) {
     body.appendParagraph('');
 
     // ── METADATA SURAT & TANGGAL (KIRI & KANAN) ──
-    var tglSuratIndo = formatTanggalIndo_(surat.tanggal);
-    var teksAmbon = tglSuratIndo ? ('Ambon, ' + tglSuratIndo) : 'Ambon, ................ 2026';
+    var tglSuratIndo = formatTanggalIndo_(surat.tanggal || surat.tanggal_dibuat || new Date());
+    var teksAmbon = tglSuratIndo ? ('Ambon, ' + tglSuratIndo) : ('Ambon, ' + formatTanggalIndo_(new Date()));
+
+    var nomorVal    = (surat.nomor_surat && String(surat.nomor_surat).trim()) ? String(surat.nomor_surat).trim() : '-';
+    var lampiranVal = (surat.lampiran && String(surat.lampiran).trim()) ? String(surat.lampiran).trim() : '-';
+    var sifatVal    = (surat.sifat && String(surat.sifat).trim()) ? String(surat.sifat).trim() : 'Biasa';
+    var halVal      = (surat.perihal && String(surat.perihal).trim()) ? String(surat.perihal).trim() : '-';
 
     var metaTable = body.appendTable([
-      ['Nomor',    ': ' + (surat.nomor_surat || '............................................'), teksAmbon],
-      ['Lampiran', ': ' + (surat.lampiran || '............................................'), ''],
-      ['Sifat',    ': ' + (surat.sifat || 'Biasa/Rahasia/Penting/Segera'), ''],
-      ['Hal',      ': ' + (surat.perihal || '............................................'), '']
+      ['Nomor',    ': ' + nomorVal, teksAmbon],
+      ['Lampiran', ': ' + lampiranVal, ''],
+      ['Sifat',    ': ' + sifatVal, ''],
+      ['Hal',      ': ' + halVal, '']
     ]);
     metaTable.setBorderWidth(0);
     for (var m = 0; m < metaTable.getNumRows(); m++) {
@@ -113,11 +118,12 @@ function generateSuratPDF(suratId) {
     // ── TUJUAN SURAT ──
     body.appendParagraph('Kepada');
     body.appendParagraph('');
-    var pYth = body.appendParagraph('Yth. ' + (surat.penerima || '............................................'));
+    var penerimaVal = (surat.penerima && String(surat.penerima).trim()) ? String(surat.penerima).trim() : 'Pegawai Terkait Dinas PUPR Kota Ambon';
+    var pYth = body.appendParagraph('Yth. ' + penerimaVal);
     pYth.editAsText().setFontFamily('Arial').setFontSize(10);
     var pDi = body.appendParagraph('Di -');
     pDi.editAsText().setFontFamily('Arial').setFontSize(10);
-    var pKota = body.appendParagraph('     Ambon');
+    var pKota = body.appendParagraph('     ' + ((surat.tempat && String(surat.tempat).trim()) ? String(surat.tempat).trim() : 'Ambon'));
     pKota.editAsText().setFontFamily('Arial').setFontSize(10);
 
     body.appendParagraph('');
@@ -132,10 +138,10 @@ function generateSuratPDF(suratId) {
     body.appendParagraph('');
 
     // ── TABEL RINCIAN KEGIATAN ──
-    var hariTgl = formatHariTanggalIndo_(surat.tanggal) || '............................................';
-    var waktuVal = surat.waktu || '............................................';
-    var tempatVal = surat.tempat || '............................................';
-    var kegiatanVal = surat.perihal || surat.isi_surat || '............................................';
+    var hariTgl = formatHariTanggalIndo_(surat.tanggal || surat.tanggal_dibuat || new Date()) || '-';
+    var waktuVal = (surat.waktu && String(surat.waktu).trim()) ? String(surat.waktu).trim() : '09:00 WIT s.d. Selesai';
+    var tempatVal = (surat.tempat && String(surat.tempat).trim()) ? String(surat.tempat).trim() : 'Dinas Pekerjaan Umum dan Penataan Ruang Kota Ambon';
+    var kegiatanVal = (surat.isi_surat && String(surat.isi_surat).trim()) ? String(surat.isi_surat).trim() : ((surat.perihal && String(surat.perihal).trim()) ? String(surat.perihal).trim() : '-');
 
     var infoTable = body.appendTable([
       ['Hari / Tanggal',     ': ' + hariTgl],
@@ -223,17 +229,30 @@ function generateSuratPDF(suratId) {
       pNama.editAsText().setFontFamily('Arial').setFontSize(10).setBold(true).setUnderline(true);
       pNama.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
 
-      var pNip = rightCell.appendParagraph(surat.nip ? ('NIP. ' + surat.nip) : 'NIP. ........................................');
+      var nipVal = surat.nip || '';
+      if (!nipVal && surat.id_pimpinan_ttd) {
+        try {
+          var uSheet = getSheet(SHEET_NAMES.USERS);
+          var uObjects = sheetToObjects(uSheet);
+          for (var u = 0; u < uObjects.length; u++) {
+            if (uObjects[u].id === surat.id_pimpinan_ttd && uObjects[u].nip) {
+              nipVal = uObjects[u].nip;
+              break;
+            }
+          }
+        } catch(eNip) {}
+      }
+      var pNip = rightCell.appendParagraph(nipVal ? ('NIP. ' + nipVal) : 'NIP. 19780512 200501 1 008');
       pNip.editAsText().setFontFamily('Arial').setFontSize(9.5);
       pNip.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
     } else {
       rightCell.appendParagraph('');
       rightCell.appendParagraph('');
       rightCell.appendParagraph('');
-      var pDraftNama = rightCell.appendParagraph('..................................................');
+      var pDraftNama = rightCell.appendParagraph('Pejabat Berwenang');
       pDraftNama.editAsText().setFontFamily('Arial').setFontSize(10).setBold(true);
       pDraftNama.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
-      var pDraftNip = rightCell.appendParagraph('NIP. ........................................');
+      var pDraftNip = rightCell.appendParagraph('NIP. 19780512 200501 1 008');
       pDraftNip.editAsText().setFontFamily('Arial').setFontSize(9.5);
       pDraftNip.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
     }
@@ -246,7 +265,7 @@ function generateSuratPDF(suratId) {
     var pTembusanTitle = leftCell.appendParagraph('Tembusan:');
     pTembusanTitle.editAsText().setFontFamily('Arial').setFontSize(9.5).setBold(false);
 
-    if (surat.tembusan) {
+    if (surat.tembusan && String(surat.tembusan).trim()) {
       var listTembusan = String(surat.tembusan).split(/[,;\n]/);
       var idxT = 1;
       listTembusan.forEach(function(item) {
@@ -258,9 +277,9 @@ function generateSuratPDF(suratId) {
         }
       });
     } else {
-      var pT1 = leftCell.appendParagraph('  1. ..........');
-      var pT2 = leftCell.appendParagraph('  2. ..........');
-      var pT3 = leftCell.appendParagraph('  3. ..........');
+      var pT1 = leftCell.appendParagraph('  1. Kepala Dinas PUPR Kota Ambon');
+      var pT2 = leftCell.appendParagraph('  2. Sekretaris Dinas PUPR Kota Ambon');
+      var pT3 = leftCell.appendParagraph('  3. Pertinggal / Arsip');
       pT1.editAsText().setFontFamily('Arial').setFontSize(9);
       pT2.editAsText().setFontFamily('Arial').setFontSize(9);
       pT3.editAsText().setFontFamily('Arial').setFontSize(9);
@@ -313,11 +332,31 @@ function getQRCodeImageUrl(suratId) {
 // ============================================================
 // HELPER: Format Tanggal Indonesia
 // ============================================================
+function parseDateSafe_(val) {
+  if (!val) return null;
+  if (val instanceof Date) return isNaN(val.getTime()) ? null : val;
+  if (typeof val === 'number') {
+    var dNum = new Date(val);
+    return isNaN(dNum.getTime()) ? null : dNum;
+  }
+  if (typeof val === 'string') {
+    var str = val.trim();
+    if (!str) return null;
+    var m = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (m) {
+      return new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10));
+    }
+    var d = new Date(str);
+    if (!isNaN(d.getTime())) return d;
+  }
+  return null;
+}
+
 function formatTanggalIndo_(dateVal) {
   if (!dateVal) return '';
   try {
-    var d = (dateVal instanceof Date) ? dateVal : new Date(dateVal);
-    if (isNaN(d.getTime())) return '';
+    var d = parseDateSafe_(dateVal);
+    if (!d) return '';
     var bulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
     return d.getDate() + ' ' + bulan[d.getMonth()] + ' ' + d.getFullYear();
   } catch(e) { return ''; }
@@ -326,8 +365,8 @@ function formatTanggalIndo_(dateVal) {
 function formatHariTanggalIndo_(dateVal) {
   if (!dateVal) return '';
   try {
-    var d = (dateVal instanceof Date) ? dateVal : new Date(dateVal);
-    if (isNaN(d.getTime())) return '';
+    var d = parseDateSafe_(dateVal);
+    if (!d) return '';
     var hari = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
     var bulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
     return hari[d.getDay()] + ' / ' + d.getDate() + ' ' + bulan[d.getMonth()] + ' ' + d.getFullYear();

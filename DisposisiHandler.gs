@@ -30,8 +30,9 @@ function createDisposisi(token, data) {
   if (data.file_base64 && data.file_name) {
     try {
       var dispFolder = getOrCreateFolder_(PDF_FOLDER_NAME);
+      var b64Data = data.file_base64.indexOf(',') > -1 ? data.file_base64.split(',')[1] : data.file_base64;
       var dispBlob = Utilities.newBlob(
-        Utilities.base64Decode(data.file_base64.replace(/^data:[^;]+;base64,/, '')),
+        Utilities.base64Decode(b64Data),
         data.file_type || 'application/octet-stream',
         data.file_name
       );

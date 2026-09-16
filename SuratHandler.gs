@@ -106,8 +106,9 @@ function createSurat(token, data) {
   if (data.file_base64 && data.file_name) {
     try {
       var folder = getOrCreateFolder_(PDF_FOLDER_NAME);
+      var b64Data = data.file_base64.indexOf(',') > -1 ? data.file_base64.split(',')[1] : data.file_base64;
       var decoded = Utilities.newBlob(
-        Utilities.base64Decode(data.file_base64.replace(/^data:[^;]+;base64,/, '')),
+        Utilities.base64Decode(b64Data),
         data.file_type || 'application/octet-stream',
         data.file_name
       );
@@ -119,6 +120,12 @@ function createSurat(token, data) {
     }
   }
 
+  var isDisetujui = (user.role === 'Pimpinan' && data.status === 'disetujui');
+  var finalStatus = isDisetujui ? 'disetujui' : (data.status || 'draft');
+  var idPimpinanTtd = isDisetujui ? user.userId : '';
+  var namaPimpinanTtd = isDisetujui ? user.nama : '';
+  var tanggalTtd = isDisetujui ? now.toISOString() : '';
+
   sheet.appendRow([
     suratId,                            // id_surat
     data.jenis_surat,                   // jenis_surat
@@ -129,19 +136,43 @@ function createSurat(token, data) {
     data.perihal,                       // perihal
     data.isi_surat || '',               // isi_surat
     data.tanggal || now.toISOString(),  // tanggal
-    'draft',                            // status
+    finalStatus,                        // status
     uploadedFileUrl,                    // file_url (lampiran awal)
     user.userId,                        // id_pembuat
     user.nama,                          // nama_pembuat
-    '',                                 // id_pimpinan_ttd
-    '',                                 // nama_pimpinan_ttd
-    '',                                 // tanggal_ttd
+    idPimpinanTtd,                      // id_pimpinan_ttd
+    namaPimpinanTtd,                    // nama_pimpinan_ttd
+    tanggalTtd,                         // tanggal_ttd
     now.toISOString(),                  // tanggal_dibuat
     data.sifat || 'Biasa',              // sifat
     data.waktu || '',                   // waktu
     data.tempat || '',                  // tempat
     data.lampiran || ''                 // lampiran (keterangan teks)
   ]);
+
+  SpreadsheetApp.flush();
+
+  // Jika pimpinan langsung membuat dan menandatangani surat, generate PDF langsung
+  if (isDisetujui) {
+    try {
+      var pdfRes = generateSuratPDF(suratId);
+      if (pdfRes.success && pdfRes.fileUrl) {
+        var allRows = sheet.getDataRange().getValues();
+        var headers = allRows[0];
+        var fileUrlIdx = headers.indexOf('file_url');
+        var idIdx = headers.indexOf('id_surat');
+        for (var r = 1; r < allRows.length; r++) {
+          if (allRows[r][idIdx] === suratId) {
+            sheet.getRange(r + 1, fileUrlIdx + 1).setValue(pdfRes.fileUrl);
+            break;
+          }
+        }
+        SpreadsheetApp.flush();
+      }
+    } catch (ePdf) {
+      Logger.log('Auto PDF error on pimpinan create: ' + ePdf.toString());
+    }
+  }
 
   return {
     success: true,
@@ -270,6 +301,28 @@ function updateSurat(token, suratId, data) {
       }
 
       var rowNum = i + 1;
+      var fileUrlIdx = headers.indexOf('file_url');
+
+      // Upload file lampiran baru jika disertakan
+      if (data.file_base64 && data.file_name) {
+        try {
+          var folder = getOrCreateFolder_(PDF_FOLDER_NAME);
+          var b64Data = data.file_base64.indexOf(',') > -1 ? data.file_base64.split(',')[1] : data.file_base64;
+          var decoded = Utilities.newBlob(
+            Utilities.base64Decode(b64Data),
+            data.file_type || 'application/octet-stream',
+            data.file_name
+          );
+          var uploaded = folder.createFile(decoded);
+          uploaded.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+          if (fileUrlIdx >= 0) {
+            sheet.getRange(rowNum, fileUrlIdx + 1).setValue('https://drive.google.com/file/d/' + uploaded.getId() + '/view?usp=sharing');
+          }
+        } catch (uploadErr) {
+          Logger.log('Update file upload error (non-fatal): ' + uploadErr.toString());
+        }
+      }
+
       var fields = ['pengirim', 'penerima', 'tembusan', 'perihal', 'isi_surat', 'tanggal', 'sifat', 'waktu', 'tempat', 'lampiran'];
       fields.forEach(function (f) {
         if (data[f] !== undefined) {
